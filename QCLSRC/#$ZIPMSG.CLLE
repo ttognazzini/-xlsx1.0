@@ -1,0 +1,325 @@
+/* Builds the Message file used by the #$ZIP Service Program */
+
+/*************************************************************/
+/****** Do not F4 these commands *****************************/
+/****** It makes it to hard to format the text ***************/
+/*************************************************************/
+/* As an attempt to not mix up the options, the thousands    */
+/* digit is used to determine which function is producing    */
+/* the error. This does make a few duplciate message but I   */
+/* don't really care.                                        */
+/*                                                           */
+/* This table list the functions and thier error prefixes:   */
+/* Function    Prefix Range     Description                  */
+/* #$ZipOpen   1      1001-1999 Open Zip File                */
+/* #$ZipFile   2      2000-2999 Open a File in a Zip File    */
+/* #$ZipWrite  3      3000-3999 Write to a File in a Zip File*/
+/* #$ZipClose  4      4000-4999 Close the Zip File           */
+/* Error 0000 is a generic error with assed text.            */
+/*************************************************************/
+
+   PGM
+   DCL  &LIB *CHAR 10 '#$XLSX1.0'
+
+/* Delete the message file if it exists */
+   DLTMSGF &LIB/#$ZIP
+   MONMSG  CPF0000
+
+/* Create the message file */
+   CRTMSGF MSGF(&LIB/#$ZIP) +
+           TEXT('Messages for #$Zip Service Program')
+
+/* Add Default message */
+
+   ADDMSGD MSGID(ZIP0000) +
+           MSGF(&LIB/#$ZIP) +
+           MSG('&1') +
+           SECLVL('Message . . . . :  &1 +
+             &N &N Cause . . . . . :  +
+                   No additional online help +
+                   information is available.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+/* Add #$ZipOpen Specific Messages */
+   ADDMSGD MSGID(ZIP1001) +
+           MSGF(&LIB/#$ZIP) +
+           MSG('Error zip file archive already opened.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when trying to +
+                      open a zip file archive with function +
+                      #$ZipOpen. This happens if a previously +
+                      opened zip file archive has not been closed. +
+                      The existing file that is still open is &1. +
+                      The file trying to be opened is &2. +
+                   &N &N Recovery  . . . :   +
+                      Update program to close the existing file +
+                      before opening a new one and run it again. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Ensure #$ZipClose is run after using #$ZipOpen +
+                      before using #$ZipOpen again.') +
+           sev(30) +
+           FMT((*CHAR 1024) (*CHAR 1024))
+
+   ADDMSGD MSGID(ZIP1002) +
+           MSGF(&LIB/#$ZIP) +
+           MSG('Error opening a zip file archive.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when trying to +
+                      open a zip file archive with function +
+                      #$ZipOpen. The archive name used is &1. +
+                   &N &N Recovery  . . . :   +
+                      Contact the people in charge of programming +
+                      to resolve the issue. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Review any previously entered messages in the +
+                      job log to find clues as to why this did not +
+                      complete properly.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(ZIP1003) +
+           MSGF(&LIB/#$ZIP) +
+           MSG('Error seting up iconv.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when trying to +
+                      open the first zip file. The error happens +
+                      when a a call QtqIconvOpen returns and error. +
+                   &N &N Recovery  . . . :   +
+                      Contact the people in charge of programming +
+                      to resolve the issue. +
+                   &N &N Technical description . . . . . . . . :   +
+                      The program uses the c api iconv to convert +
+                      data from ebcdic to ascii. A call to +
+                      QtqIconvOpen was issued to get the conversion +
+                      tables. It returned an error. +
+                   &N &N Review any previously entered messages in the +
+                      job log to find clues as to why this did not +
+                      complete properly.') +
+           sev(30)
+
+   ADDMSGD MSGID(ZIP1004) +
+           MSGF(&LIB/#$ZIP) +
+           MSG('File &1 not found.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when trying to +
+                      append data to an existing and the file +
+                      does not exist. The file that doesn''t +
+                      exist is &1. +
+                   &N &N Recovery  . . . :   +
+                      Create the file before appending to it or +
+                      change the append option to create. +
+                   &N &N Technical description . . . . . . . . :   +
+                      When using #$ZipOpen a parameter is passed to +
+                      create a file or append to an existing file. +
+                      The function was called with +
+                      the append to option. The file that was +
+                      supposed to be appended to does not exists +
+                      so this option is invalid.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(ZIP1005) +
+           MSGF(&LIB/#$ZIP) +
+           MSG('File &1 already exists.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when trying to +
+                      create a new zip file using the #$Zip +
+                      service program. The file was opened +
+                      with the create option, but the file to +
+                      create already exists. The file that already +
+                      exists is &1. +
+                   &N &N Recovery  . . . :   +
+                      Delete the file and try the program again, +
+                      or change the program to use the create or +
+                      replace option and run it again. +
+                   &N &N Technical description . . . . . . . . :   +
+                      When using #$ZipOpen a parameter is passed to +
+                      create a file or append to an existing file. +
+                      The function was called with +
+                      the create option. The file that was +
+                      supposed to be created already exists so +
+                      it cannot be created.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(ZIP1006) +
+           MSGF(&LIB/#$ZIP) +
+           MSG('Not authorized to file &1.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when trying to +
+                      replace a zip file without authority +
+                      to the existing file. The file that exists +
+                      is &1. +
+                   &N &N Recovery  . . . :   +
+                      Get authority to the file being replaced +
+                      and try the command again. +
+                   &N &N Technical description . . . . . . . . :   +
+                      When using #$ZipOpen a parameter is passed to +
+                      create or replace a file. The file already +
+                      exists so program will replace it. However the +
+                      current user does not have authority to +
+                      the existing file so it cannot be replaced. +
+                      The issue could be that the user is not +
+                      authorized or that the file is locked by +
+                      another job, either way the current job +
+                      cannot replace the existing file.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(ZIP1007) +
+           MSGF(&LIB/#$ZIP) +
+           MSG('Unable to open file &1.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when trying to +
+                      replace a zip file when the system cannot +
+                      open the file. The file that is being +
+                      replaced is &1. +
+                   &N &N Recovery  . . . :   +
+                      See if the file is checked out by someone +
+                      else and try the command again. +
+                   &N &N Technical description . . . . . . . . :   +
+                      When using #$ZipOpen a parameter is passed to +
+                      create or replace a file. The file already +
+                      exists so the program will replace it. The +
+                      current user does have authority to +
+                      the existing file but the system cannot open +
+                      the file. This generally means that some job +
+                      has the file checked out. Try deleting the +
+                      the existing file and see if something +
+                      stops you. If it does you need to find +
+                      out what is locking the file.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(ZIP1008) +
+           MSGF(&LIB/#$ZIP) +
+           MSG('Invalid compression option.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      A zip file was trying to be opened with +
+                      an invalid compression level. The compression +
+                      level must be a number between 0 and 9. The +
+                      value passed to #$ZipOpen was &2. The value +
+                      of &3 will be used instead. The file being +
+                      opened is &1. +
+                   &N &N Technical description . . . . . . . . :   +
+                      The valid compression levels are 0 to 9. 0 +
+                      produces no compression while 9 is the highest +
+                      level of compression. A default of 5 is +
+                      considered standard as it produces decent +
+                      compression without taking to long. If a value +
+                      below 0 is passed the system will use 0 and +
+                      generate this message. If a value above 9 +
+                      is sent the system will use 5 and generate +
+                      this message.') +
+           sev(30) +
+           FMT((*CHAR 1024) (*CHAR 1024) (*CHAR 1024))
+
+/* Add #$ZipFile Specific Messages */
+   ADDMSGD MSGID(ZIP2001) +
+           MSGF(&LIB/#$ZIP) +
+           MSG('Error file already opened in zip archive.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      An error ocurred using the funciton #$ZipFile. +
+                      An attempt was made to add a d file that was +
+                      being added is &1. +
+                   &N &N Recovery  . . . :   +
+                      Contact the people in charge of programming +
+                      to resolve the issue. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Review any previously entered messages in the +
+                      job log to find clues as to why this did not +
+                      complete properly.') +
+           sev(30) +
+           FMT((*CHAR 1024) (*CHAR 1024))
+
+   ADDMSGD MSGID(ZIP2002) +
+           MSGF(&LIB/#$ZIP) +
+           MSG('Error opening a file in a zip file archive.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      An error ocurred using the funciton #$ZipFile. +
+                      The zip file archive is &2 and file that was +
+                      being added is &1. +
+                   &N &N Recovery  . . . :   +
+                      Contact the people in charge of programming +
+                      to resolve the issue. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Review any previously entered messages in the +
+                      job log to find clues as to why this did not +
+                      complete properly.') +
+           sev(30) +
+           FMT((*CHAR 1024) (*CHAR 1024))
+
+   ADDMSGD MSGID(ZIP2003) +
+           MSGF(&LIB/#$ZIP) +
+           MSG('Error opening a file in a zip file archive.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      An error ocurred using the funciton #$ZipFile. +
+                      The zip file archive is &2 and file that was +
+                      being added is &1. +
+                   &N &N Recovery  . . . :   +
+                      Contact the people in charge of programming +
+                      to resolve the issue. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Review any previously entered messages in the +
+                      job log to find clues as to why this did not +
+                      complete properly.') +
+           sev(30) +
+           FMT((*CHAR 1024) (*CHAR 1024))
+
+/* Add #$ZipWrite Specific Messages */
+   ADDMSGD MSGID(ZIP3001) +
+           MSGF(&LIB/#$ZIP) +
+           MSG('Error writing data to a file in a zip archive.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      #$ZipWrite function. The program was attempting +
+                      to add data to file &1 inside zip archive &2. +
+                   &N &N Recovery  . . . :   +
+                      Contact the people in charge of programming +
+                      to resolve the issue. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Review any previously entered messages in the +
+                      job log to find clues as to why this did not +
+                      complete properly.') +
+           sev(30) +
+           FMT((*CHAR 1024) (*CHAR 1024))
+
+   ADDMSGD MSGID(ZIP3002) +
+           MSGF(&LIB/#$ZIP) +
+           MSG('Error ZIP archive is not open.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      #$ZipWrite function. The program was attempting +
+                      to add data to file &1 inside zip archive &2, +
+                      but the zip file is has not been opened. +
+                   &N &N Recovery  . . . :   +
+                      Contact the people in charge of programming +
+                      to resolve the issue. +
+                   &N &N Technical description . . . . . . . . :   +
+                      This occurs when using procedure #$ZipWrite +
+                      or #$ZipWriteB before opening a file in +
+                      the zip archive with the #$ZipFile pocedure.') +
+           sev(30) +
+           FMT((*CHAR 1024) (*CHAR 1024))
+
+/* Add #$ZipClose Specific Messages */
+   ADDMSGD MSGID(ZIP4001) +
+           MSGF(&LIB/#$ZIP) +
+           MSG('Error - Closing Zip File Archive.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      #$ZipClose function to close an open Zip +
+                      File Archive. The name of the zip file +
+                      is &1.+
+                   &N &N Recovery  . . . :   +
+                      Contact the people in charge of programming +
+                      to resolve the issue. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Review any previously entered messages in the +
+                      job log to find clues as to why this did not +
+                      complete properly.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+             ENDPGM

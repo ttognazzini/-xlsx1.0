@@ -1,0 +1,745 @@
+/* Builds the Message file used by the #$XLSX Service Program */
+
+/*************************************************************/
+/****** Do not F4 these commands *****************************/
+/****** It makes it to hard to format the text ***************/
+/*************************************************************/
+/* As an attempt to not mix up the options, the thousands    */
+/* digit is used to determine which function is producing    */
+/* the error. This does make a few duplciate message but I   */
+/* don't really care.                                        */
+/*                                                           */
+/* This table list the functions and thier error prefixes:   */
+/* Function    Prefix Range     Description                  */
+/* #$XLSXOpen  1      1001-1999 Open New WorkBook            */
+/* #$XLSXStyle 2      2000-2999 Add Style to Workbook        */
+/* #$XLSXWkSh  3      3000-3999 Add Worksheet to Workbook    */
+/* #$XLSXChar  4      4000-4999 Add Character value to a Cell*/
+/* #$XLSXNumr  4      4000-4999 Add Numeric value to a Cell  */
+/* #$XLSXDate  4      4000-4999 Add Date value to a Cell     */
+/* #$XLSXForm  4      4000-4999 Add a Formula to a Cell      */
+/* #$XLSXNull  5.0    5000-5499 Add no value, skips a cell   */
+/* #$XLSXNext  5.5    5500-5999 Skips a row                  */
+/* #$XLSXCell  6      6000-6999 Returns a cell or range      */
+/* #$XLSXClose 9      9000-9999 Closes the workbook          */
+/* Error 0000 is a generic error with assed text.            */
+/*************************************************************/
+
+   PGM
+   DCL  &LIB *CHAR 10 '#$XLSX1.0'
+
+/* Delete the message file if it exists */
+   DLTMSGF &LIB/#$XLSX
+   MONMSG  CPF0000
+
+/* Create the message file */
+   CRTMSGF MSGF(&LIB/#$XLSX) +
+           TEXT('Messages for #$XLSX Service Program')
+
+/* Add Default message */
+
+   ADDMSGD MSGID(XLS0000) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('&1') +
+           SECLVL('Message . . . . :  &1 +
+             &N &N Cause . . . . . :  +
+                   No additional online help +
+                   information is available.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+/* Add Work Book Specific Messages */
+   ADDMSGD MSGID(XLS1001) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Work book is already open.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when trying to +
+                      open a workbook when one is already open. +
+                      Close the existing worksheet before opening +
+                      antoher one. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue use the #$XLSXClose +
+                      function before using #$XLSXOpen to open +
+                      a new work book. +
+                   &N &N Technical description . . . . . . . . :   +
+                      The system only handles working on one work +
+                      book at a time, you cannot open a new +
+                      withouit closing the previous one. +
+                   &N &N See the documentation for the #$XLSX +
+                      service program for information on the order +
+                      of functions required to create a workbook.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(XLS1002) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Output name required.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      Cannot create an Excel file without an +
+                      output name. When calling function #$XLSXOpen +
+                      the OutputName parameter must be passed. This +
+                      parameter spcified the name and path of the +
+                      Excel file to create. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue update the program +
+                      to include the OutputName parameter on the +
+                      call to #$XLSXOpen and run the program again. +
+                   &N &N Technical description . . . . . . . . :   +
+                      The a file cannot be opened without a path +
+                      and name. +
+                   &N &N See the documentation for the #$XLSX +
+                      service program for information on the +
+                      required parameters for #$XLSXOpen.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(XLS1005) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Invalid Workbook Key.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      #$XLSXOpen function and including an invalid +
+                      key. The key passed was &1. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue modify the key passed +
+                      to #$XLSXOpen and rerun the program. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Workbook properties are passed to #$XLSXOpen +
+                      using keyed pairs. Each keyed pair consists +
+                      of a Key and Value. They are seperated by a +
+                      semicolon. For instance, a keyed pair may +
+                      be passed as Debug:Yes. The key +
+                      for this pair is Debug and the +
+                      value is Yes. +
+                   &N &N This error means the keyed pair passed +
+                      to the function is not correct. View the +
+                      documentation for the #$XLSX service program +
+                      to determine what keys are valid. The +
+                      #$XLSXOpen function will ignore any key +
+                      that is not valid.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(XLS1006) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Custom Property missing name.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      #$XLSXOpen function and including a +
+                      CustomProperty argument without a name.+
+                      The argument causing the error was &1.+
+                   &N &N Recovery  . . . :   +
+                      To correct the issue modify the argument passed +
+                      to #$XLSXOpen and rerun the program. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Workbook properties are passed to #$XLSXOpen +
+                      using keyed pairs. Each keyed pair consists +
+                      of a Key and Value. They are seperated by a +
+                      semicolon. This keyed pair was passed with +
+                      a key of CustomProperty. The custom property +
+                      key requires three values, one for the +
+                      property, one for the type and one for the +
+                      value. This argument did not contain a name.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(XLS1007) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - invalid Custom Property type.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      #$XLSXOpen function and including a +
+                      CustomProperty argument with an invalid +
+                      or missing type. +
+                      The argument causing the error was &1.+
+                   &N &N Recovery  . . . :   +
+                      To correct the issue modify the argument passed +
+                      to #$XLSXOpen and rerun the program. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Workbook properties are passed to #$XLSXOpen +
+                      using keyed pairs. Each keyed pair consists +
+                      of a Key and Value. They are seperated by a +
+                      semicolon. This keyed pair was passed with +
+                      a key of CustomProperty. The custom property +
+                      key requires three values, one for the +
+                      property, one for the type and one for the +
+                      value. This argument either did not contain +
+                      a type or contained an invalid type. +
+                      The valid types are Text, Date, Number, YesOrNo +
+                      or Boolean, which is the same as YesOrNo.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(XLS1008) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Invalid custom property value') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      #$XLSXOpen function and including a +
+                      CustomProperty argument with an invalid +
+                      value. +
+                      The argument causing the error was &1.+
+                   &N &N Recovery  . . . :   +
+                      To correct the issue modify the argument passed +
+                      to #$XLSXOpen and rerun the program. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Workbook properties are passed to #$XLSXOpen +
+                      using keyed pairs. Each keyed pair consists +
+                      of a Key and Value. They are seperated by a +
+                      semicolon. This keyed pair was passed with +
+                      a key of CustomProperty. The custom property +
+                      key requires three values, one for the +
+                      property, one for the type and one for the +
+                      value. +
+                   &N &N This argument either contained a value +
+                      that did not match the type.  +
+                   &N &N A type of Text can contain any text. +
+                   &N &N A type of Number +
+                      must contain numeric data, value 1-9, commas, +
+                      one decimal point and the negative sign (-). +
+                   &N &N A type of Date must contain a dat in +
+                      YYYYMMDD format, for example 20200522. +
+                   &N &N A type of YesOrNo or Boolean must contain +
+                      one of these values for true: True, on, *on +
+                      Yes, Y or 1 or one of these values for false: +
+                      False, off, *off, No, n, or 0.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(XLS1011) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Invalid Workbook Buffering Argument.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      #$XLSXOPEN function and including an invalid +
+                      buffering value. The value passed was &1. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue modify the value passed +
+                      for buffering to #$XLSXOPEN and rerun the program. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Workbook properties are passed to #$XLSXOPEN +
+                      using arguments containing keyed pairs. +
+                      Each keyed pair consists +
+                      of a Key and Value. They are seperated by a +
+                      semicolon. For instance, a keyed pair may +
+                      be passed as Buffering:No. The key +
+                      for this pair is Buffering and the +
+                      value is No. +
+                   &N &N This error means the value passed for the +
+                      buffering option is not valid. Valid values +
+                      for the buffering option are: Yes,Y,1,*on,on,+
+                      true,no,n,0,*off,off and false. +
+                      The buffering option will be ignored for this +
+                      workbook and buffering will be set to on.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+/* Add Style specific messages */
+   ADDMSGD MSGID(XLS2001) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Workbook is not open.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated if trying to add +
+                      styles before a work book is opened. Styles +
+                      are added witht he #$XLSXStyle function. +
+                      A work book must first be opened using the +
+                      #$XLSXOpen function. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue use the #$XLSXOpen +
+                      function to open a new work book before +
+                      adding a style. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Since the workbook is not opened styles cannot +
+                      be added.') +
+           sev(30)
+
+   ADDMSGD MSGID(XLS2002) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Invalid Style Key.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      #$XLSXStyle function and including an invalid +
+                      key. The key passed was &1. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue modify the key passed +
+                      to #$XLSXStyle and rerun the program. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Style properties are passed to #$XLSXStyle +
+                      using keyed pairs. Each keyed pair consists +
+                      of a Key and Value. They are seperated by a +
+                      semicolon. For instance, a keyed pair may +
+                      be passed as SetPatternFill:solid. The key +
+                      for this pair is SetPatternFill and the +
+                      value is solid. +
+                   &N &N This error means the keyed pair passed +
+                      to the function is not correct. View the +
+                      documentation for the #$XLSX service program +
+                      to determine what keys are valid. The +
+                      #$XLSXStyle function will ignore any key +
+                      that is not valid.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(XLS2003) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - &1 value of &2 not valid') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      #$XLSXStyle function and including an invalid +
+                      value to a key. The key passed was &1 +
+                      and the value passed was &2. Invalid values +
+                      are ignored by #$XLSXStyle. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue modify the value passed +
+                      to #$XLSXStyle and rerun the program. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Style properties are passed to #$XLSXStyle +
+                      using keyed pairs. Each keyed pair consists +
+                      of a Key and Value. They are seperated by a +
+                      semicolon. For instance, a keyed pair may +
+                      be passed as SetPatternFill:solid. The key +
+                      for this pair is SetPatternFill and the +
+                      value is solid. +
+                   &N &N This error means the value passed +
+                      to the function is not correct. View the +
+                      documentation for the #$XLSX service program +
+                      to determine what values are valid for a +
+                      specific key. The #$XLSXStyle function will +
+                      ignore any keyed pair that is not valid.') +
+           sev(30) +
+           FMT((*CHAR 1024) (*CHAR 1024))
+
+/* Add Worksheet specific messages */
+   ADDMSGD MSGID(XLS3001) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Workbook is not open.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated if trying to add +
+                      anything using one of the #$XLSX functions +
+                      before issueing the #$XLSXOpen function. +
+                      The function that generated this message is &1. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue use the #$XLSXOpen +
+                      function to open a new work book before +
+                      running the function that generated this error. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Since the workbook is not opened sheets cannot +
+                      be added, no properties +
+                      can be set and no data can be added.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(XLS3002) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Invalid Worksheet Key.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      #$XLSXWkSh function and including an invalid +
+                      key. The key passed was &1. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue modify the key passed +
+                      to #$XLSXWkSh and rerun the program. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Worksheet properties are passed to #$XLSXWkSh +
+                      using keyed pairs. Each keyed pair consists +
+                      of a Key and Value. They are seperated by a +
+                      semicolon. For instance, a keyed pair may +
+                      be passed as SheetName:Sheet 1. The key +
+                      for this pair is SheetName and the +
+                      value is Sheet 1. +
+                   &N &N This error means the keyed pair passed +
+                      to the function is not correct. View the +
+                      documentation for the #$XLSX service program +
+                      to determine what keys are valid. The +
+                      #$XLSXWkSh function will ignore any key +
+                      that is not valid.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+
+   ADDMSGD MSGID(XLS3003) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Invalid or Missing Worksheet Name.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      #$XLSXWkSh function and not including a name. +
+                      The funtion requires a SheetName argument with +
+                      a name passed. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue by modify the arguments passed +
+                      to #$XLSXWkSh and rerun the program. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Worksheet properties are passed to #$XLSXWkSh +
+                      using arguments containing keyed pairs. +
+                      Each keyed pair consists +
+                      of a Key and Value. They are seperated by a +
+                      semicolon. For instance, a keyed pair may +
+                      be passed as SheetName:Sheet 1. The key +
+                      for this pair is SheetName and the +
+                      value is Sheet 1. +
+                   &N &N This error means there was no argument passed +
+                      for the sheet name. +
+                   &N &N See the documentation for the #$XLSX +
+                      service program for information on parameters +
+                      for the the #$XLSXWkSh function.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(XLS3004) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Invalid ColumnWidth.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      #$XLSXWkSh and adding a column width. The +
+                      column widths are passed with a format of +
+                      ColumnWidth:100:25, where the 100 is the column +
+                      number to set the width for and 25 is the width +
+                      in characters to set the column to. Column numbers +
+                      must be between 1 and 2000. Columns widths must be +
+                      between 0 and 255. The value passed was &1. +
+                   &N &N Recovery  . . . :   +
+                      Correct the issue by modify the arguments passed +
+                      to #$XLSXWkSh and rerun the program. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Worksheet properties are passed to #$XLSXWkSh +
+                      using arguments containing keyed pairs. +
+                      Each keyed pair consists +
+                      of a Key and Value. They are seperated by a +
+                      semicolon. For instance, a keyed pair may +
+                      be passed as SheetName:Sheet 1. The key +
+                      for this pair is SheetName and the +
+                      value is Sheet 1. +
+                   &N &N This error means there was an argument passed +
+                      for a column width that was either improperly +
+                      formatted or exceeded the allowed range for +
+                      a column number or width. +
+                   &N &N See the documentation for the #$XLSX +
+                      service program for information on parameters +
+                      for the the #$XLSXWkSh function.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(XLS3005) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Worksheet name already used.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      #$XLSXWkSh and adding a sheet name that has +
+                      already been added to the workbook. The file +
+                      will still be created, it will just use the +
+                      default sheet name. +
+                      The sheet name used is &1. +
+                   &N &N Recovery  . . . :   +
+                      Correct the issue by modify the arguments passed +
+                      to #$XLSXWkSh and rerun the program.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+/* Add Add Function Specific Messages */
+   ADDMSGD MSGID(XLS4001) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Worksheet is not open.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated if trying to add +
+                      data to a worksheet before it is opened. +
+                      A work sheet must be added to an open work book +
+                      before any data can be added. The function trying +
+                      to add data is &1. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue use the #$XLSXWkSh +
+                      function to open a new work sheet before +
+                      running the function that generated this error. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Since a worksheet has not been added to the +
+                      work book, there is no place to add data to. +
+                   &N &N See the documentation for the #$XLSX +
+                      service program for information on creating +
+                      work sheets in a work book.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(XLS4002) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Worksheet is already closed.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated if trying to add +
+                      data to a worksheet after it has been closed. +
+                      The function trying to add data is &1. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue use the #$XLSXWkSh +
+                      function to open a new work sheet before +
+                      running the function that generated this error. +
+                   &N &N Technical description . . . . . . . . :   +
+                      You really should not be able to get this +
+                      message because work sheets are closed +
+                      automatically when starting a new worksheet +
+                      or closing the entire workbook. If you +
+                      received this message then you really messed +
+                      up the flow of the program. +
+                   &N &N See the documentation for the #$XLSX +
+                      service program for information on the order +
+                      of functions required to create a workbook.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(XLS4003) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Invalid style for &1 parameter.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      &1 function and including an invalid +
+                      style. The value passed was &2. Styles must +
+                      be defined prior to using them. Styles are +
+                      case sensitive, so make sure your definition +
+                      matches your usages case. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue modify the style passed +
+                      to &1 or defining the style first +
+                      and rerun the program. +
+                   &N &N Technical description . . . . . . . . :   +
+                      &1 is used to add character data to a cell. +
+                      It accepts a style as the second parameter. Styles +
+                      are used to format the appearance of the cell. +
+                      Style must be setup before using them for a cell. +
+                   &N &N See the documentation for the #$XLSX +
+                      service program for information on creating +
+                      and using styles.') +
+           sev(30) +
+           FMT((*CHAR 1024) (*CHAR 1024))
+
+   ADDMSGD MSGID(XLS4004) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Cell to be written past max.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      &1 function and adding data to a cell +
+                      that will end up past Excel''s max of 16384 +
+                      columns. The program will automatically +
+                      wrap to the next row, but this is most likely +
+                      not what needs to be done. +
+                   &N &N Recovery  . . . :   +
+                      Correct the program and rerun it. +
+                   &N &N Technical description . . . . . . . . :   +
+                      This error normally occures when adding detail +
+                      and forgetting to use #$XLSNext before starting +
+                      a new row. This causes the #$XLSX service +
+                      program to just keep adding data to the same row. +
+                   &N &N If you are intending to add more than +
+                      16384 columns, it is just not possible, +
+                      Excel''s maximum is 16384.') +
+           sev(20) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(XLS4005) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Invalid date.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      &1 function to add a date to +
+                      a cell and passing an invalid date. +
+                      The value passed for the date is &2. +
+                      The &1 function expects a date in +
+                      &3 format. +
+                   &N &N Recovery  . . . :   +
+                      Correct the data and rerun the program. +
+                   &N &N Technical description . . . . . . . . :   +
+                      This error normally occures when using the wrong +
+                      function to add data to a field or if the +
+                      program just had invalid data. Review the +
+                      documentation for the #$XLSX service program for +
+                      examples and information on adding a date to +
+                      an Excel file.') +
+           sev(20) +
+           FMT((*CHAR 1024) (*CHAR 1024)(*CHAR 1024))
+
+/* Add #$XSLXCell Specific Messages */
+   ADDMSGD MSGID(XLS6000) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Invalid #$XLSXCell Argument.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated when using the +
+                      #$XLSXCell function and including an invalid +
+                      argument. The value passed was &1. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue modify the value passed +
+                      to #$XLSXCell and rerun the program. +
+                   &N &N Technical description . . . . . . . . :   +
+                      #$XLSXCell is used to return a cell position +
+                      or range relative to the current cell in a +
+                      worksheet. The valid values are: +
+                   &N &N VerticalRange or VR +
+                      &N HorizontalRange or HR +
+                      &N Range or R +
+                      &N VerticalOffset or VO +
+                      &N HorizontalOffset or HO +
+                      &N Offset or O +
+                   &N &N See the documentation for the #$XLSX +
+                      service program for information on the valid +
+                      arguments that can be passed to #$XLSXCell.') +
+           sev(30) +
+           FMT((*CHAR 1024))
+
+   ADDMSGD MSGID(XLS6001) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Invalid Parameters for &1.') +
+           SECLVL('&N &N This message is generated when an +
+                      invalid number of parameters are passed +
+                      to the #$XLSXCell function. +
+                      The function requires &2 or &3 parameters +
+                      and &4 parameters where passed. The +
+                      full value passed to #$XLSXCell is &5 +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue modify the value passed +
+                      to #$XLSXCell and rerun the program. +
+                   &N &N Technical description . . . . . . . . :   +
+                      #$XLSXCell is used to return a cell position +
+                      or range relative to the current cell in a +
+                      worksheet. +
+                   &N &N See the documentation for the #$XLSX +
+                      service program for information on the valid +
+                      arguments that can be passed to #$XLSXCell.') +
+           sev(30) +
+           FMT((*CHAR 1024) (*CHAR 1024) (*CHAR 1024) (*CHAR 1024) +
+               (*CHAR 1024))
+
+   ADDMSGD MSGID(XLS6002) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Invalid Parameters for &1.') +
+           SECLVL('&N &N This message is generated when an +
+                      invalid parameter is passed to the +
+                      #$XLSXCell function. The issue occures when +
+                      non-numeric data is passed as a parameters +
+                      that requires numeric data. The full value +
+                      passed to #$XLSXCell is &2. Parameter &3 of +
+                      value is not numeric and it must be. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue modify the value passed +
+                      to #$XLSXCell and rerun the program. +
+                   &N &N Technical description . . . . . . . . :   +
+                      #$XLSXCell is used to return a cell position +
+                      or range relative to the current cell in a +
+                      worksheet. +
+                   &N &N See the documentation for the #$XLSX +
+                      service program for information on the valid +
+                      arguments that can be passed to #$XLSXCell.') +
+           sev(30) +
+           FMT((*CHAR 1024) (*CHAR 1024) (*CHAR 1024))
+
+   ADDMSGD MSGID(XLS6003) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Invalid Parameters for &1.') +
+           SECLVL('&N &N This message is generated when an +
+                      invalid number of parameters are passed +
+                      to the #$XLSXCell function. +
+                      The function requires &2 parameters +
+                      and &3 parameters where passed. The +
+                      full value passed to #$XLSXCell is &4 +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue modify the value passed +
+                      to #$XLSXCell and rerun the program. +
+                   &N &N Technical description . . . . . . . . :   +
+                      #$XLSXCell is used to return a cell position +
+                      or range relative to the current cell in a +
+                      worksheet. +
+                   &N &N See the documentation for the #$XLSX +
+                      service program for information on the valid +
+                      arguments that can be passed to #$XLSXCell.') +
+           sev(30) +
+           FMT((*CHAR 1024) (*CHAR 1024) (*CHAR 1024) (*CHAR 1024) +
+               (*CHAR 1024))
+
+   ADDMSGD MSGID(XLS6004) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Invalid Parameters for #$XLSXCell.') +
+           SECLVL('&N &N This message is generated when the +
+                      parameters passed to the #$XLSXCell +
+                      function generates an invalid reference. +
+                      The function returns a cell or range +
+                      of cells relative to the current cell +
+                      in the work sheet. +
+                   &N &N The parameters passed resulted in a +
+                      reference that was before &1. +
+                      The current row of +
+                      the worksheet is &2 and current column is &3. +
+                      &5 +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue modify the values passed +
+                      to #$XLSXCell and rerun the program. +
+                   &N &N Technical description . . . . . . . . :   +
+                      #$XLSXCell is used to return a cell position +
+                      or range relative to the current cell in a +
+                      worksheet. +
+                   &N &N See the documentation for the #$XLSX +
+                      service program for information on the valid +
+                      arguments that can be passed to #$XLSXCell.') +
+           sev(30) +
+           FMT((*CHAR 1024) (*CHAR 1024) (*CHAR 1024) (*CHAR 1024) +
+               (*CHAR 1024))
+
+   ADDMSGD MSGID(XLS6005) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - cannot get a cell before a workbook is opened') +
+           SECLVL('&N &N This message is generated when +
+                      calling #$XLSXCell before a workbook is +
+                      opened. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue open a work book with +
+                      #$XLSXOpen and add work sheet to it with +
+                      #$XLSXWkSh before using the #$XLSXCell function. +
+                   &N &N Technical description . . . . . . . . :   +
+                      #$XLSXCell returns a cell or +
+                      cell range relative to the current +
+                      cell of a work sheet. A work sheet cannot +
+                      exist before a work book is created. +
+                   &N &N See the documentation for the #$XLSX +
+                      service program for information on the order +
+                      that functions must be used in.') +
+           sev(30) +
+           FMT((*CHAR 1024) (*CHAR 1024) (*CHAR 1024) (*CHAR 1024) +
+               (*CHAR 1024))
+
+   ADDMSGD MSGID(XLS6006) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - cannot get a cell before a worksheet is opened') +
+           SECLVL('&N &N This message is generated when +
+                      calling #$XLSXCell before a worksheet is +
+                      opened. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue add work sheet to +
+                      to the workbook with the +
+                      #$XLSXWkSh before using the #$XLSXCell function. +
+                   &N &N Technical description . . . . . . . . :   +
+                      #$XLSXCell returns a cell or +
+                      cell range relative to the current +
+                      cell of a work sheet. There is no location +
+                      to reference if a worksheet has not been opened. +
+                   &N &N See the documentation for the #$XLSX +
+                      service program for information on the order +
+                      that functions must be used in.') +
+           sev(30) +
+           FMT((*CHAR 1024) (*CHAR 1024) (*CHAR 1024) (*CHAR 1024) +
+               (*CHAR 1024))
+
+/* Add #$XLSXClose Specific messages */
+   ADDMSGD MSGID(XLS9001) +
+           MSGF(&LIB/#$XLSX) +
+           MSG('Error - Workbook is not open.') +
+           SECLVL('&N &N Cause . . . . . :   +
+                      This message is generated if trying to close +
+                      a wookr book when one is not opened. Closing +
+                      a workbook is done with the #$XLSClose function. +
+                      At the time the function was called there was +
+                      an open workbook. +
+                   &N &N Recovery  . . . :   +
+                      To correct the issue use the #$XLSXOpen +
+                      function to open a new work book before +
+                      trying to close it. +
+                   &N &N Technical description . . . . . . . . :   +
+                      Since the workbook is not opened it cannot +
+                      be closed. +
+                   &N &N See the documentation for the #$XLSX +
+                      service program for information on the order +
+                      of functions required to create a workbook.') +
+           sev(30)
+
+             ENDPGM

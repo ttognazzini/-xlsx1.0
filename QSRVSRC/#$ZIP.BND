@@ -1,0 +1,10 @@
+STRPGMEXP PGMLVL(*CURRENT) SIGNATURE('ZIP')
+/********************************************************************/
+/*   *SRVPGM      #$ZIP        ZLIB         21/03/31  09:17:18      */
+/********************************************************************/
+  EXPORT SYMBOL("#$ZIPCLOSE")
+  EXPORT SYMBOL("#$ZIPFILE")
+  EXPORT SYMBOL("#$ZIPOPEN")
+  EXPORT SYMBOL("#$ZIPWRITE")
+  EXPORT SYMBOL("#$ZIPWRITEB")
+ENDPGMEXP
