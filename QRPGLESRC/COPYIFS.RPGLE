@@ -139,13 +139,13 @@
 
 //***************************************************************
 // Copy - copy a source file
-//     Â€
+//     €
 //   Input: member = name of the source member
 //          type   = source type
 //          text   = member text
-//     Â€
+//     €
 //   Output: nothing
-//     Â€
+//     €
 //***************************************************************
    dcl-proc copy;
    dcl-pi *n;
@@ -212,10 +212,10 @@
 
 //***************************************************************
 // CMD - This proceudre runs a command.
-//     Â€
+//     €
 //   Input: #$CMD = Command to run.
 //   Output: nothing
-//     Â€
+//     €
 //***************************************************************
    dcl-proc cmd;
    dcl-pi *n;

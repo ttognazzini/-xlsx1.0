@@ -120,13 +120,13 @@
 
 //***************************************************************
 // Copy - copy a source file to the ifs
-//     Â€
+//     €
 //   Input: member = name of the source member
 //          type   = source type
 //          text   = member text
-//     Â€
+//     €
 //   Output: nothing
-//     Â€
+//     €
 //***************************************************************
    dcl-proc copy;
    dcl-pi *n;
@@ -143,10 +143,10 @@
 
 //***************************************************************
 // CMD - This proceudre runs a command.
-//     Â€
+//     €
 //   Input: #$CMD = Command to run.
 //   Output: nothing
-//     Â€
+//     €
 //***************************************************************
    dcl-proc cmd;
    dcl-pi *n;
@@ -164,14 +164,14 @@
    end-proc;
 //****************************************************************
 // upify - Convert to all upper case
-// Converts lowercase characters to uppercase                        Â‚
-// OnlyÂ€converts english characters.                                 Â‚
-//   Â‚ Â€                                                             Â‚
-//   Â‚ Â€  INPUT:  data = Field to convert to all capitals            Â‚
-//   Â‚ Â€RETURNS:  The data field in all capitals                     Â‚
-//   Â‚ Â€                                                             Â‚
-// Examples EVAL    TEXT=#$UPFIY(TEXT)                               Â‚
-//   Â‚ Â€                                                             Â‚
+// Converts lowercase characters to uppercase                        ‚
+// Only€converts english characters.                                 ‚
+//   ‚ €                                                             ‚
+//   ‚ €  INPUT:  data = Field to convert to all capitals            ‚
+//   ‚ €RETURNS:  The data field in all capitals                     ‚
+//   ‚ €                                                             ‚
+// Examples EVAL    TEXT=#$UPFIY(TEXT)                               ‚
+//   ‚ €                                                             ‚
 //****************************************************************
    dcl-proc upify;
    dcl-pi *n varchar(32768);
@@ -187,12 +187,12 @@
 
 //****************************************************************
 // lowfy - Convert to all lowercase
-//   Â‚ Â€                                                             Â‚
-//   Â‚ Â€  INPUT:  data = Field to convert to all lower case          Â‚
-//   Â‚ Â€RETURNS:  The data field in all lower case                   Â‚
-//   Â‚ Â€                                                             Â‚
-// Examples EVAL    TEXT=LOWFY(TEXT)                               Â‚
-//   Â‚ Â€                                                             Â‚
+//   ‚ €                                                             ‚
+//   ‚ €  INPUT:  data = Field to convert to all lower case          ‚
+//   ‚ €RETURNS:  The data field in all lower case                   ‚
+//   ‚ €                                                             ‚
+// Examples EVAL    TEXT=LOWFY(TEXT)                               ‚
+//   ‚ €                                                             ‚
 //****************************************************************
    dcl-proc lowfy;
    dcl-pi *n varchar(32768);

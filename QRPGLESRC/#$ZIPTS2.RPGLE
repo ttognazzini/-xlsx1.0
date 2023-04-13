@@ -16,8 +16,8 @@
      C* Add a file inside the zip archive
      C                   CallP     #$ZipFile('file.xml')
      C*
-     C* Write CAFÃ‰, this tests a problem with the ascii conversion
-     C                   CallP     #$ZipWrite('<test>Ã‰</test>')
+     C* Write CAFÉ, this tests a problem with the ascii conversion
+     C                   CallP     #$ZipWrite('<test>É</test>')
      C*
      C* Close the zipfile
      C                   CallP     #$zipClose()

@@ -38,9 +38,9 @@
      C                                       : %len(%trim(testWriteB)) )
      C                   EndDo
      C*
-     C* Add a test file with CAFÃ‰ in it, this tests a problem with the ascii conversion
+     C* Add a test file with CAFÉ in it, this tests a problem with the ascii conversion
      C                   CallP     #$ZipFile('test.txt')
-     C                   CallP     #$ZipWrite('CAFÃ‰12')
+     C                   CallP     #$ZipWrite('CAFÉ12')
      C*
      C* Close the zipfile
      C                   CallP     #$zipClose()

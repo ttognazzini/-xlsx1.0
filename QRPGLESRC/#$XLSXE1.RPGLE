@@ -1,27 +1,31 @@
-     H DATEDIT(*YMD) OPTION(*SRCSTMT:*NODEBUGIO:*NOSHOWCPY) DEBUG INDENT('| ')
-     H DFTACTGRP(*NO) BNDDIR('#$XLSX1.0/#$XLSX')
-     F* #$XLSX Hello World Program Fixed Format
-     D/INCLUDE #$XLSX/QRPGLESRC,#$XLSX_H
-     D defaultPath     DS                  dtaara('#$XLSX/#$XLSXTEMP')
-     D   path                  1    100
-     C******************************************************************
-     C*
-     C* Get default path from data area
-     C                   In        defaultPath
-     C*
-     C* Start the Excel Work book - MUST BE DONE FIRST
-     C                   CALLP     #$XLSXOpen('OutputName:'+%trim(path) +
-     C                                                   '#$XLSXE1.xlsx')
-     C*
-     C* CREATE A NEW SHEET(TAB)
-     C                   CALLP     #$XLSXWkSh()
-     C*
-     C* POPULATE THE FIRST CELL IN THE FIRST ROW
-     C                   CALLP     #$XLSXCHAR('Hello World')
-     C*
-     C* Close the open XLS File
-     C                   CALLP     #$XLSXClose
-     C*
-     C                   SETON                                        LR
-     C                   RETURN
-     C******************************************************************
+**Free
+Ctl-Opt DatEdit(*YMD) Option(*NoDebugIO:*SrcStmt:*NoShowCpy) Debug Indent('| ')
+        DftActGrp(*No) BndDir('#$XLSX1.0/#$XLSX');
+
+// #$XLSX Hello World Program Free Format
+
+/Include #$XLSX1.0/QRPGLESRC,#$XLSX_H   //copy book for prototype definitions
+
+Dcl-Ds defaultPath DTAARA(*AUTO:*USRCTL:'#$XLSX1.0/#$XLSXTEMP');
+  path Char(100);
+End-Ds;
+
+// Get default path from data area
+In defaultPath;
+
+// Start the Excel Work book - MUST BE DONE FIRST
+#$XLSXOpen('OutputName:'+%Trim(path) + '/#$XLSXE1.xlsx');
+
+
+// Create a New Sheet(Tab)
+#$XLSXWkSh();
+
+// Populate the First Cell in the First Row
+#$XLSXChar('Hello World');
+
+// Close the open XLS File
+#$XLSXClose();
+
+*inlr=*on;
+Return;
+

@@ -44,14 +44,11 @@
 //   openf - create and open a file in the ifs
 //   writef - write a record to the open file
 //   CLOSEF - Closes the open file
-//   upify - Convert to all upper case
-//   lowfy - Convert to all lower case
 //   rvl - returns a number from a character string
 //   last - returns the last characters from a string
 //   ColRow Returns the column and row number as a string
 //   Col - Returns the character Value of column
 //   Col2 - Returns the numeric value of a character column
-//   cmd - run a command
 //   SNDMSG - Send Message
 //   ExcDate - Convert YYYYMMDD date field to Excel number date.
 //   XMLESC - Escapes special characters in a string for XML
@@ -65,11 +62,11 @@
 // See #$XLXSTS for an example.
 //
 // To Create this program:
-//  crtrpgmod  module(qtemp/#$xlsx) tgtrls(v7r1m0)
+//  crtrpgmod  module(qtemp/#$xlsx) tgtrls(v7r3m0)
 //             srcfile(#$xlsx1.0/qrpglesrc) dbgview(*all)
 //  crtsrvpgm  srvpgm(#$xlsx1.0/#$xlsx) module(qtemp/#$xlsx)
 //             export(*srcfile) bndsrvpgm(#$xlsx1.0/#$zip)
-//             TEXT('Create Pretty Excel File') TGTRLS(V7R1M0)
+//             TEXT('Create Pretty Excel File') TGTRLS(V7R3M0)
 //  dltmod     module(qtemp/#$xlsx)
 //
 //  First time only
@@ -91,7 +88,7 @@ Ctl-Opt Option(*SrcStmt : *NoDebugIO:*NoShowCpy) Indent('| ') Debug  nomain ALLO
 
 // This field is used for the memory buffer.
 // In theory a larger buffer will be faster but use more memory.
-Dcl-S buffer Varchar(64000);
+Dcl-S buffer Varchar(64000:4);
 
 // Style Data Structure, 1000 are stored in the workbook data structure.
 Dcl-Ds Style Qualified;
@@ -316,7 +313,7 @@ Dcl-Proc #$XLSXOpen EXPORT;
   EndIf;
 
   // Add .xlsx extension if not there
-  If LOWFY(LAST(WorkBook.OutputName:5))<>'.xlsx';
+  If %lower(LAST(WorkBook.OutputName:5))<>'.xlsx';
     WorkBook.OutputName=%Trim(WorkBook.OutputName)+ '.xlsx';
   EndIf;
 
@@ -393,19 +390,14 @@ Dcl-Proc #$XLSXOpen EXPORT;
 
     // make sure custom value has a valid type
     If Args.Arg(x).Key='CUSTOMPROPERTY' and
-       Args.Arg(x).value(2)<>'TEXT' and
-       Args.Arg(x).value(2)<>'DATE' and
-       Args.Arg(x).value(2)<>'NUMBER' and
-       Args.Arg(x).value(2)<>'YESORNO' and
-       Args.Arg(x).value(2)<>'BOOLEAN';
+       not(Args.Arg(x).value(2) in %list('TEXT':'DATE':'NUMBER':'YESORNO':'BOOLEAN'));
       SndMsg(Args.Arg(x).Parm:1007:1);
       Args.Arg(x).Error='Y';
       LeaveSr;
     EndIf;
 
     // make sure custom value of type date has a valid date
-    If Args.Arg(x).Key='CUSTOMPROPERTY' and
-       Args.Arg(x).value(2)='DATE';
+    If Args.Arg(x).Key='CUSTOMPROPERTY' and Args.Arg(x).value(2)='DATE';
       If Vdat(Args.Arg(x).value(3));
         SndMsg(Args.Arg(x).Parm:1007:1);
         Args.Arg(x).Error='Y';
@@ -414,27 +406,15 @@ Dcl-Proc #$XLSXOpen EXPORT;
     EndIf;
 
     // if they use a type of BOOLEAN change it to YESORNO
-    If Args.Arg(x).Key='CUSTOMPROPERTY' and
-       Args.Arg(x).value(2)='BOOLEAN';
+    If Args.Arg(x).Key='CUSTOMPROPERTY' and Args.Arg(x).value(2)='BOOLEAN';
       Args.Arg(x).value(2)='YESORNO';
     EndIf;
 
     // make sure custom value of type YESORNO has a valid value
-    If Args.Arg(x).Key='CUSTOMPROPERTY' and
-       Args.Arg(x).value(2)='YESORNO';
-      Args.Arg(x).value(3)=upify(Args.Arg(x).value(3));
-      If Args.Arg(x).VALUE(3)<>'YES'  and
-         Args.Arg(x).VALUE(3)<>'Y'    and
-         Args.Arg(x).VALUE(3)<>'1'    and
-         Args.Arg(x).VALUE(3)<>'*ON'  and
-         Args.Arg(x).VALUE(3)<>'ON'   and
-         Args.Arg(x).VALUE(3)<>'TRUE' and
-         Args.Arg(x).VALUE(3)<>'NO'   and
-         Args.Arg(x).VALUE(3)<>'N'    and
-         Args.Arg(x).VALUE(3)<>'0'    and
-         Args.Arg(x).VALUE(3)<>'*OFF' and
-         Args.Arg(x).VALUE(3)<>'OFF'  and
-         Args.Arg(x).VALUE(3)<>'FALSE';
+    If Args.Arg(x).Key='CUSTOMPROPERTY' and Args.Arg(x).value(2)='YESORNO';
+      Args.Arg(x).value(3)=%upper(Args.Arg(x).value(3));
+      If not (Args.Arg(x).VALUE(3) in %list('YES':'Y':'1':'*ON':'ON':'TRUE'
+                                           :'NO':'N':'0':'*OFF':'OFF':'FALSE'));
         SndMsg(Args.Arg(x).Parm:1008:1);
         Args.Arg(x).Error='Y';
         LeaveSr;
@@ -442,8 +422,7 @@ Dcl-Proc #$XLSXOpen EXPORT;
     EndIf;
 
     // make sure custom value of type number has a valid number
-    If Args.Arg(x).Key='CUSTOMVALUE' and
-       Args.Arg(x).value(2)='NUMBER';
+    If Args.Arg(x).Key='CUSTOMVALUE' and Args.Arg(x).value(2)='NUMBER';
       If VNum(Args.Arg(x).value(3));
         SndMsg(Args.Arg(x).Parm:1008:1);
         Args.Arg(x).Error='Y';
@@ -453,19 +432,9 @@ Dcl-Proc #$XLSXOpen EXPORT;
 
     // make sure buffering value is valid
     If Args.Arg(x).Key='BUFFERING';
-      Args.Arg(x).value(1)=upify(Args.Arg(x).value(1));
-      If Args.Arg(x).VALUE(1)<>'YES'  and
-         Args.Arg(x).VALUE(1)<>'Y'    and
-         Args.Arg(x).VALUE(1)<>'1'    and
-         Args.Arg(x).VALUE(1)<>'*ON'  and
-         Args.Arg(x).VALUE(1)<>'ON'   and
-         Args.Arg(x).VALUE(1)<>'TRUE' and
-         Args.Arg(x).VALUE(1)<>'NO'   and
-         Args.Arg(x).VALUE(1)<>'N'    and
-         Args.Arg(x).VALUE(1)<>'0'    and
-         Args.Arg(x).VALUE(1)<>'*OFF' and
-         Args.Arg(x).VALUE(1)<>'OFF'  and
-         Args.Arg(x).VALUE(1)<>'FALSE';
+      Args.Arg(x).value(1)=%upper(Args.Arg(x).value(1));
+      If not (Args.Arg(x).VALUE(1) in %list('YES':'Y':'1':'*ON':'ON':'TRUE'
+                                           :'NO':'N':'0':'*OFF':'OFF':'FALSE'));
         SndMsg(Args.Arg(x).value(1):1011:1);
         Args.Arg(x).Error='Y';
         LeaveSr;
@@ -489,17 +458,11 @@ Dcl-Proc #$XLSXOpen EXPORT;
     EndIf;
 
     If Args.Arg(x).Key='DEBUG' and
-        (upify(Args.Arg(x).Value(1))='Y' or
-         upify(Args.Arg(x).Value(1))='YES' or
-         upify(Args.Arg(x).Value(1))='TRUE' or
-         upify(Args.Arg(x).Value(1))='ON' or
-         upify(Args.Arg(x).Value(1))='*ON' or
-         Args.Arg(x).Value(1) ='1');
+        %upper(Args.Arg(x).Value(1)) in %list('Y':'YES':'TRUE':'ON':'*ON':'1');
       WorkBook.Debug=*On;
     EndIf;
 
-    If Args.Arg(x).Key='CREATOR' or
-       Args.Arg(x).Key='AUTHOR';
+    If Args.Arg(x).Key='CREATOR' or Args.Arg(x).Key='AUTHOR';
       WorkBook.Creator=Args.Arg(x).Value(1);
     EndIf;
 
@@ -553,36 +516,23 @@ Dcl-Proc #$XLSXOpen EXPORT;
         WorkBook.customProperties(WorkBook.CustomPCount).Type='4';
       EndIf;
       If Args.Arg(x).Value(2)='YESORNO';
-        If Args.Arg(x).Value(3)='*ON' or
-           Args.Arg(x).Value(3)='ON' or
-           Args.Arg(x).Value(3)='YES' or
-           Args.Arg(x).Value(3)='Y' or
-           Args.Arg(x).Value(3)='1' or
-           Args.Arg(x).value(3)='TRUE';
-          WorkBook.customProperties(WorkBook.CustomPCount).Value=
-              'true';
+        If Args.Arg(x).Value(3) in %list('*ON':'ON':'YES':'Y':'1':'TRUE');
+          WorkBook.customProperties(WorkBook.CustomPCount).Value = 'true';
         Else;
-          WorkBook.customProperties(WorkBook.CustomPCount).Value=
-              'false';
+          WorkBook.customProperties(WorkBook.CustomPCount).Value = 'false';
         EndIf;
       Else;
-        WorkBook.customProperties(WorkBook.CustomPCount).Value=
-               Args.Arg(x).Value(3);
+        WorkBook.customProperties(WorkBook.CustomPCount).Value = Args.Arg(x).Value(3);
       EndIf;
     EndIf;
 
     If Args.Arg(x).Key='BUFFERING' and
-        (upify(Args.Arg(x).Value(1))='N' or
-         upify(Args.Arg(x).Value(1))='NO' or
-         upify(Args.Arg(x).Value(1))='FALSE' or
-         upify(Args.Arg(x).Value(1))='OFF' or
-         upify(Args.Arg(x).Value(1))='*OFF' or
-         Args.Arg(x).Value(1) ='0');
+        %upper(Args.Arg(x).Value(1)) in %list('N':'NO':'FALSE':'OFF':'*OFF':'0');
       WorkBook.Buffering=*Off;
     EndIf;
-
   EndSr;
 End-Proc;
+
 
 // #$XLSXWkSh - Create a new Worksheet
 //     input = Arguments, see documentation for all options
@@ -654,44 +604,19 @@ Dcl-Proc #$XLSXWkSh EXPORT;
 
   EndSr;
 
-  // load arguments into Args data structure
+  // load arguments into Args data structure, copies in subr LoadArgs, used in many places
   /Copy #$XLSX1.0/QRPGLESRC,#$XLSXLARG
 
   // validate parameters
   BegSr valArg;
 
     // Validate Keys
-    If Args.Arg(x).Key<>'SHEETNAME' and
-       Args.Arg(x).Key<>'AUTOBREAKS' and
-       Args.Arg(x).Key<>'COLUMNWIDTH' and
-       Args.Arg(x).Key<>'ZOOM' and
-       Args.Arg(x).Key<>'HEADER' and
-       Args.Arg(x).Key<>'FOOTER' and
-       Args.Arg(x).Key<>'DIFFERENTODDANDEVENPAGES' and
-       Args.Arg(x).Key<>'DIFFERENTFIRSTPAGE' and
-       Args.Arg(x).Key<>'SCALEWITHDOCUMENT' and
-       Args.Arg(x).Key<>'ALIGNWITHPAGEMARGINS' and
-       Args.Arg(x).Key<>'REPEATINGCOLUMNS' and
-       Args.Arg(x).Key<>'REPEATINGROWS' and
-       Args.Arg(x).Key<>'FREEZEROWS' and
-       Args.Arg(x).Key<>'FREEZECOLUMNS' and
-       Args.Arg(x).Key<>'PRINTORIENTATION' and
-       Args.Arg(x).Key<>'PRINTSCALE' and
-       Args.Arg(x).Key<>'FILTER' and
-       Args.Arg(x).Key<>'MARGINS' and
-       Args.Arg(x).Key<>'SIDEMARGINS' and
-       Args.Arg(x).Key<>'LEFTMARGIN' and
-       Args.Arg(x).Key<>'RIGHTMARGIN' and
-       Args.Arg(x).Key<>'TOPMARGIN' and
-       Args.Arg(x).Key<>'BOTTOMMARGIN' and
-       Args.Arg(x).Key<>'HEADERMARGIN' and
-       Args.Arg(x).Key<>'FOOTERMARGIN' and
-       Args.Arg(x).Key<>'PAPERSIZE' and
-       Args.Arg(x).Key<>'PRINTAREA' and
-       Args.Arg(x).Key<>'PRINTQUALITY' and
-       Args.Arg(x).Key<>'PRINTCENTERHORIZONTALLY' and
-       Args.Arg(x).Key<>'PRINTCENTERVERTICALLY' and
-       Args.Arg(x).Key<>'PRINTPAGEORDER';
+    If not (Args.Arg(x).Key in %list('SHEETNAME':'AUTOBREAKS':'COLUMNWIDTH':'ZOOM':'HEADER':'FOOTER'
+       :'DIFFERENTODDANDEVENPAGES':'DIFFERENTFIRSTPAGE':'SCALEWITHDOCUMENT':'ALIGNWITHPAGEMARGINS'
+       :'REPEATINGCOLUMNS':'REPEATINGROWS':'FREEZEROWS':'FREEZECOLUMNS':'PRINTORIENTATION'
+       :'PRINTSCALE':'FILTER':'MARGINS':'SIDEMARGINS':'LEFTMARGIN':'RIGHTMARGIN':'TOPMARGIN'
+       :'BOTTOMMARGIN':'HEADERMARGIN':'FOOTERMARGIN':'PAPERSIZE':'PRINTAREA':'PRINTQUALITY'
+       :'PRINTCENTERHORIZONTALLY':'PRINTCENTERVERTICALLY':'PRINTPAGEORDER'));
       Args.Arg(x).Error='Y';
       SndMsg(Args.Arg(x).Key:3002:1);
       LeaveSr;
@@ -768,7 +693,7 @@ Dcl-Proc #$XLSXWkSh EXPORT;
     EndIf;
 
     If Args.Arg(x).Key='PRINTORIENTATION';
-      If upIfy(%subst(Args.Arg(x).Value(1):1:1))='L';
+      If %upper(%subst(Args.Arg(x).Value(1):1:1))='L';
         WorkSheet.Landscape=*on;
       Else;
         WorkSheet.Landscape=*off;
@@ -788,136 +713,69 @@ Dcl-Proc #$XLSXWkSh EXPORT;
     EndIf;
 
     If Args.Arg(x).Key='AUTOBREAKS';
-      If Args.Arg(x).Value(1)='*ON' or
-         Args.Arg(x).Value(1)='ON'  or
-         Args.Arg(x).Value(1)='YES' or
-         Args.Arg(x).Value(1)='Y'   or
-         Args.Arg(x).Value(1)='1'   or
-         Args.Arg(x).value(1)='TRUE';
-        WorkSheet.AutoBreaks=*on;
-      Else;
-        WorkSheet.AutoBreaks=*off;
-      EndIf;
+      WorkSheet.AutoBreaks = Args.Arg(x).Value(1) in %list('*ON':'ON':'YES':'Y':'1':'TRUE');
     EndIf;
 
     If Args.Arg(x).Key='DIFFERENTODDANDEVENPAGES';
-      If Args.Arg(x).Value(1)='*ON' or
-         Args.Arg(x).Value(1)='ON'  or
-         Args.Arg(x).Value(1)='YES' or
-         Args.Arg(x).Value(1)='Y'   or
-         Args.Arg(x).Value(1)='1'   or
-         Args.Arg(x).Value(1)='TRUE';
-        WorkSheet.DifferentOddAndEvenPages=*on;
-      Else;
-        WorkSheet.DifferentOddAndEvenPages=*off;
-      EndIf;
+      WorkSheet.DifferentOddAndEvenPages =
+        Args.Arg(x).Value(1) in %list('*ON':'ON':'YES':'Y':'1':'TRUE');
     EndIf;
 
     If Args.Arg(x).Key='DIFFERENTFIRSTPAGE';
-      If Args.Arg(x).Value(1)='*ON' or
-         Args.Arg(x).Value(1)='ON'  or
-         Args.Arg(x).Value(1)='YES' or
-         Args.Arg(x).Value(1)='Y'   or
-         Args.Arg(x).Value(1)='1'   or
-         Args.Arg(x).Value(1)='TRUE';
-        WorkSheet.DifferentFirstpage=*on;
-      Else;
-        WorkSheet.DifferentFirstpage=*off;
-      EndIf;
+      WorkSheet.DifferentFirstpage = Args.Arg(x).Value(1) in %list('*ON':'ON':'YES':'Y':'1':'TRUE');
     EndIf;
 
     If Args.Arg(x).Key='SCALEWITHDOCUMENT';
-      If Args.Arg(x).Value(1)='*ON' or
-         Args.Arg(x).Value(1)='ON'  or
-         Args.Arg(x).Value(1)='YES' or
-         Args.Arg(x).Value(1)='Y'   or
-         Args.Arg(x).Value(1)='1'   or
-         Args.Arg(x).Value(1)='TRUE';
-        WorkSheet.ScaleWithDocument=*on;
-      Else;
-        WorkSheet.ScaleWithDocument=*off;
-      EndIf;
+      WorkSheet.ScaleWithDocument = Args.Arg(x).Value(1) in %list('*ON':'ON':'YES':'Y':'1':'TRUE');
     EndIf;
 
     If Args.Arg(x).Key='ALIGNWITHPAGEMARGINS';
-      If Args.Arg(x).Value(1)='*ON' or
-         Args.Arg(x).Value(1)='ON'  or
-         Args.Arg(x).Value(1)='YES' or
-         Args.Arg(x).Value(1)='Y'   or
-         Args.Arg(x).Value(1)='1'   or
-         Args.Arg(x).Value(1)='TRUE';
-        WorkSheet.AlignWithPageMargins=*on;
-      Else;
-        WorkSheet.AlignWithPageMargins=*off;
-      EndIf;
+      WorkSheet.AlignWithPageMargins=Args.Arg(x).Value(1) in %list('*ON':'ON':'YES':'Y':'1':'TRUE');
     EndIf;
 
     If Args.Arg(x).Key='PRINTCENTERHORIZONTALLY';
-      If Args.Arg(x).Value(1)='*ON' or
-         Args.Arg(x).Value(1)='ON'  or
-         Args.Arg(x).Value(1)='YES' or
-         Args.Arg(x).Value(1)='Y'   or
-         Args.Arg(x).Value(1)='1'   or
-         Args.Arg(x).Value(1)='TRUE';
-        WorkSheet.PrintCenterHorizontally=*on;
-      Else;
-        WorkSheet.PrintCenterHorizontally=*off;
-      EndIf;
+      WorkSheet.PrintCenterHorizontally =
+        Args.Arg(x).Value(1) in %list('*ON':'ON':'YES':'Y':'1':'TRUE');
     EndIf;
 
     If Args.Arg(x).Key='PRINTCENTERVERTICALLY';
-      If Args.Arg(x).Value(1)='*ON' or
-         Args.Arg(x).Value(1)='ON'  or
-         Args.Arg(x).Value(1)='YES' or
-         Args.Arg(x).Value(1)='Y'   or
-         Args.Arg(x).Value(1)='1'   or
-         Args.Arg(x).Value(1)='TRUE';
-        WorkSheet.PrintCenterVertically=*on;
-      Else;
-        WorkSheet.PrintCenterVertically=*off;
-      EndIf;
+      WorkSheet.PrintCenterVertically =
+        Args.Arg(x).Value(1) in %list('*ON':'ON':'YES':'Y':'1':'TRUE');
     EndIf;
 
     If Args.Arg(x).Key='LEFTMARGIN' and
-       RVL(Args.Arg(x).VALUE(1))>=1 and
-       RVL(Args.Arg(x).VALUE(1))<=400;
+       RVL(Args.Arg(x).VALUE(1))>=1 and RVL(Args.Arg(x).VALUE(1))<=400;
       WorkSheet.MarginLeft = RVL(Args.Arg(x).VALUE(1));
     EndIf;
 
     If Args.Arg(x).Key='RIGHTMARGIN' and
-       RVL(Args.Arg(x).VALUE(1))>=1 and
-       RVL(Args.Arg(x).VALUE(1))<=400;
+       RVL(Args.Arg(x).VALUE(1))>=1 and RVL(Args.Arg(x).VALUE(1))<=400;
       WorkSheet.MarginRight = RVL(Args.Arg(x).VALUE(1));
     EndIf;
 
     If Args.Arg(x).Key='TOPMARGIN' and
-       RVL(Args.Arg(x).VALUE(1))>=1 and
-       RVL(Args.Arg(x).VALUE(1))<=400;
+       RVL(Args.Arg(x).VALUE(1))>=1 and RVL(Args.Arg(x).VALUE(1))<=400;
       WorkSheet.MarginTop = RVL(Args.Arg(x).VALUE(1));
     EndIf;
 
     If Args.Arg(x).Key='BOTTOMMARGIN' and
-       RVL(Args.Arg(x).VALUE(1))>=1 and
-       RVL(Args.Arg(x).VALUE(1))<=400;
+       RVL(Args.Arg(x).VALUE(1))>=1 and RVL(Args.Arg(x).VALUE(1))<=400;
       WorkSheet.MarginBottom = RVL(Args.Arg(x).VALUE(1));
     EndIf;
 
     If Args.Arg(x).Key='HEADERMARGIN' and
-       RVL(Args.Arg(x).VALUE(1))>=1 and
-       RVL(Args.Arg(x).VALUE(1))<=400;
+       RVL(Args.Arg(x).VALUE(1))>=1 and RVL(Args.Arg(x).VALUE(1))<=400;
       WorkSheet.MarginHeader = RVL(Args.Arg(x).VALUE(1));
     EndIf;
 
     If Args.Arg(x).Key='FOOTERMARGIN' and
-       RVL(Args.Arg(x).VALUE(1))>=1 and
-       RVL(Args.Arg(x).VALUE(1))<=400;
+       RVL(Args.Arg(x).VALUE(1))>=1 and RVL(Args.Arg(x).VALUE(1))<=400;
       WorkSheet.MarginFooter = RVL(Args.Arg(x).VALUE(1));
     EndIf;
 
     // Process Margin Keyword with 1 parameter, sets all margins
     If Args.Arg(x).Key='MARGIN' and Args.Arg(x).Values=1;
-      If RVL(Args.Arg(x).VALUE(1))>=0 and
-         RVL(Args.Arg(x).VALUE(1))<=21;
+      If RVL(Args.Arg(x).VALUE(1))>=0 and RVL(Args.Arg(x).VALUE(1))<=21;
         WorkSheet.MarginLeft   = RVL(Args.Arg(x).VALUE(1));
         WorkSheet.MarginRight  = RVL(Args.Arg(x).VALUE(1));
         WorkSheet.MarginTop    = RVL(Args.Arg(x).VALUE(1));
@@ -929,13 +787,11 @@ Dcl-Proc #$XLSXWkSh EXPORT;
 
     // Process Margin Keyword with 2 parameter, sets Top/Bottom them Right/Left
     If Args.Arg(x).Key='MARGIN' and Args.Arg(x).Values=2;
-      If RVL(Args.Arg(x).VALUE(1))>=0 and
-         RVL(Args.Arg(x).VALUE(1))<=21;
+      If RVL(Args.Arg(x).VALUE(1))>=0 and RVL(Args.Arg(x).VALUE(1))<=21;
         WorkSheet.MarginTop    = RVL(Args.Arg(x).VALUE(1));
         WorkSheet.MarginBottom = RVL(Args.Arg(x).VALUE(1));
       EndIf;
-      If RVL(Args.Arg(x).VALUE(2))>=0 and
-         RVL(Args.Arg(x).VALUE(2))<=21;
+      If RVL(Args.Arg(x).VALUE(2))>=0 and RVL(Args.Arg(x).VALUE(2))<=21;
         WorkSheet.MarginLeft   = RVL(Args.Arg(x).VALUE(2));
         WorkSheet.MarginRight  = RVL(Args.Arg(x).VALUE(2));
       EndIf;
@@ -943,73 +799,59 @@ Dcl-Proc #$XLSXWkSh EXPORT;
 
     // Process Margin Keyword with 3 parameter, Top, Sides, Bottom
     If Args.Arg(x).Key='MARGIN' and Args.Arg(x).Values=3;
-      If RVL(Args.Arg(x).VALUE(1))>=0 and
-         RVL(Args.Arg(x).VALUE(1))<=21;
+      If RVL(Args.Arg(x).VALUE(1))>=0 and RVL(Args.Arg(x).VALUE(1))<=21;
         WorkSheet.MarginTop    = RVL(Args.Arg(x).VALUE(1));
       EndIf;
-      If RVL(Args.Arg(x).VALUE(2))>=0 and
-         RVL(Args.Arg(x).VALUE(2))<=21;
+      If RVL(Args.Arg(x).VALUE(2))>=0 and RVL(Args.Arg(x).VALUE(2))<=21;
         WorkSheet.MarginLeft   = RVL(Args.Arg(x).VALUE(2));
         WorkSheet.MarginRight  = RVL(Args.Arg(x).VALUE(2));
       EndIf;
-      If RVL(Args.Arg(x).VALUE(3))>=0 and
-         RVL(Args.Arg(x).VALUE(3))<=21;
+      If RVL(Args.Arg(x).VALUE(3))>=0 and RVL(Args.Arg(x).VALUE(3))<=21;
         WorkSheet.MarginBottom = RVL(Args.Arg(x).VALUE(3));
       EndIf;
     EndIf;
 
     // Process Margin Keyword with 4 parameter, top, right, bottom, left
     If Args.Arg(x).Key='MARGIN' and Args.Arg(x).Values=4;
-      If RVL(Args.Arg(x).VALUE(1))>=0 and
-         RVL(Args.Arg(x).VALUE(1))<=21;
+      If RVL(Args.Arg(x).VALUE(1))>=0 and RVL(Args.Arg(x).VALUE(1))<=21;
         WorkSheet.MarginTop    = RVL(Args.Arg(x).VALUE(1));
       EndIf;
-      If RVL(Args.Arg(x).VALUE(2))>=0 and
-         RVL(Args.Arg(x).VALUE(2))<=21;
+      If RVL(Args.Arg(x).VALUE(2))>=0 and RVL(Args.Arg(x).VALUE(2))<=21;
         WorkSheet.MarginRight  = RVL(Args.Arg(x).VALUE(2));
       EndIf;
-      If RVL(Args.Arg(x).VALUE(3))>=0 and
-         RVL(Args.Arg(x).VALUE(3))<=21;
+      If RVL(Args.Arg(x).VALUE(3))>=0 and RVL(Args.Arg(x).VALUE(3))<=21;
         WorkSheet.MarginBottom = RVL(Args.Arg(x).VALUE(3));
       EndIf;
-      If RVL(Args.Arg(x).VALUE(4))>=0 and
-         RVL(Args.Arg(x).VALUE(4))<=21;
+      If RVL(Args.Arg(x).VALUE(4))>=0 and RVL(Args.Arg(x).VALUE(4))<=21;
         WorkSheet.MarginLeft   = RVL(Args.Arg(x).VALUE(4));
       EndIf;
     EndIf;
 
     // Process Margin Keyword with 6 parameters, top,right,bottom,left,header,footer
     If Args.Arg(x).Key='MARGIN' and Args.Arg(x).Values=6;
-      If RVL(Args.Arg(x).VALUE(1))>=0 and
-         RVL(Args.Arg(x).VALUE(1))<=21;
+      If RVL(Args.Arg(x).VALUE(1))>=0 and RVL(Args.Arg(x).VALUE(1))<=21;
         WorkSheet.MarginTop    = RVL(Args.Arg(x).VALUE(1));
       EndIf;
-      If RVL(Args.Arg(x).VALUE(2))>=0 and
-         RVL(Args.Arg(x).VALUE(2))<=21;
+      If RVL(Args.Arg(x).VALUE(2))>=0 and RVL(Args.Arg(x).VALUE(2))<=21;
         WorkSheet.MarginRight  = RVL(Args.Arg(x).VALUE(2));
       EndIf;
-      If RVL(Args.Arg(x).VALUE(3))>=0 and
-         RVL(Args.Arg(x).VALUE(3))<=21;
+      If RVL(Args.Arg(x).VALUE(3))>=0 and RVL(Args.Arg(x).VALUE(3))<=21;
         WorkSheet.MarginBottom = RVL(Args.Arg(x).VALUE(3));
       EndIf;
-      If RVL(Args.Arg(x).VALUE(4))>=0 and
-         RVL(Args.Arg(x).VALUE(4))<=21;
+      If RVL(Args.Arg(x).VALUE(4))>=0 and RVL(Args.Arg(x).VALUE(4))<=21;
         WorkSheet.MarginLeft   = RVL(Args.Arg(x).VALUE(4));
       EndIf;
-      If RVL(Args.Arg(x).VALUE(5))>=0 and
-         RVL(Args.Arg(x).VALUE(5))<=21;
+      If RVL(Args.Arg(x).VALUE(5))>=0 and RVL(Args.Arg(x).VALUE(5))<=21;
         WorkSheet.MarginHeader = RVL(Args.Arg(x).VALUE(5));
       EndIf;
-      If RVL(Args.Arg(x).VALUE(6))>=0 and
-         RVL(Args.Arg(x).VALUE(6))<=21;
+      If RVL(Args.Arg(x).VALUE(6))>=0 and RVL(Args.Arg(x).VALUE(6))<=21;
         WorkSheet.MarginFooter = RVL(Args.Arg(x).VALUE(6));
       EndIf;
     EndIf;
 
     // Process SideMargin Keyword, sets the right and left margins
     If Args.Arg(x).Key='SIDEMARGIN' and
-       RVL(Args.Arg(x).VALUE(1))>=0 and
-       RVL(Args.Arg(x).VALUE(1))<=21;
+       RVL(Args.Arg(x).VALUE(1))>=0 and RVL(Args.Arg(x).VALUE(1))<=21;
       WorkSheet.MarginRight  = RVL(Args.Arg(x).VALUE(1));
       WorkSheet.MarginLeft   = RVL(Args.Arg(x).VALUE(1));
     EndIf;
@@ -1022,7 +864,7 @@ Dcl-Proc #$XLSXWkSh EXPORT;
       WorkSheet.PrintQuality = Args.Arg(x).VALUE(1);
     EndIf;
 
-    If Args.Arg(x).Key='PRINTPAGEORDER';
+    If Args.Arg(x).Key='PRINTPAGEORDER' ;
       If Args.Arg(x).VALUE(1)='OVERTHENDOWN';
         WorkSheet.PageOrder = 'O';
       Else;
@@ -1032,11 +874,9 @@ Dcl-Proc #$XLSXWkSh EXPORT;
 
     If Args.Arg(x).Key='COLUMNWIDTH';
       If rvl(Args.Arg(x).Value(2))=0;
-        WorkSheet.Widths(%int(RVL(Args.Arg(x).value(1))))=
-            col2(Args.Arg(x).Value(2));
+        WorkSheet.Widths(%int(RVL(Args.Arg(x).value(1)))) = col2(Args.Arg(x).Value(2));
       Else;
-        WorkSheet.Widths(%int(RVL(Args.Arg(x).value(1))))=
-            rvl(Args.Arg(x).Value(2));
+        WorkSheet.Widths(%int(RVL(Args.Arg(x).value(1)))) = rvl(Args.Arg(x).Value(2));
       EndIf;
       WorkSheet.WidthsSet=*on;
       If WorkSheet.WidthsMax<RVL(Args.Arg(x).value(1));
@@ -1046,27 +886,21 @@ Dcl-Proc #$XLSXWkSh EXPORT;
 
     If Args.Arg(x).Key='REPEATINGCOLUMNS';
       WorkBook.Repeating=*on;
-      WorkBook.RepeatingColumns(WorkBook.SheetCount+1)=
-                               RVL(Args.Arg(x).VALUE(1));
+      WorkBook.RepeatingColumns(WorkBook.SheetCount+1) = RVL(Args.Arg(x).VALUE(1));
       If RVL(Args.Arg(x).VALUE(2))<>0;
-        WorkBook.RepeatingColumnsEnd(WorkBook.SheetCount+1)=
-                              RVL(Args.Arg(x).VALUE(2));
+        WorkBook.RepeatingColumnsEnd(WorkBook.SheetCount+1) = RVL(Args.Arg(x).VALUE(2));
       Else;
-        WorkBook.RepeatingColumnsEnd(WorkBook.SheetCount+1)=
-                              RVL(Args.Arg(x).VALUE(1));
+        WorkBook.RepeatingColumnsEnd(WorkBook.SheetCount+1) = RVL(Args.Arg(x).VALUE(1));
       EndIf;
     EndIf;
 
     If Args.Arg(x).Key='REPEATINGROWS';
       Workbook.Repeating=*on;
-      WorkBook.RepeatingRows(WorkBook.SheetCount+1)=
-                             RVL(Args.Arg(x).VALUE(1));
+      WorkBook.RepeatingRows(WorkBook.SheetCount+1) = RVL(Args.Arg(x).VALUE(1));
       If RVL(Args.Arg(x).VALUE(2))<>0;
-        WorkBook.RepeatingRowsEnd(WorkBook.SheetCount+1)=
-                              RVL(Args.Arg(x).VALUE(2));
+        WorkBook.RepeatingRowsEnd(WorkBook.SheetCount+1) = RVL(Args.Arg(x).VALUE(2));
       Else;
-        WorkBook.RepeatingRowsEnd(WorkBook.SheetCount+1)=
-                              RVL(Args.Arg(x).VALUE(1));
+        WorkBook.RepeatingRowsEnd(WorkBook.SheetCount+1) = RVL(Args.Arg(x).VALUE(1));
       EndIf;
     EndIf;
 
@@ -1079,8 +913,7 @@ Dcl-Proc #$XLSXWkSh EXPORT;
 
     // For Headers and Footers, build the options in the header ds and then
     // once the location is determined move them into the Headers/Footers array
-    If (Args.Arg(x).Key='HEADER' or Args.Arg(x).Key='FOOTER') and
-       Args.Arg(x).Value(1)<>' ';
+    If (Args.Arg(x).Key='HEADER' or Args.Arg(x).Key='FOOTER') and Args.Arg(x).Value(1)<>' ';
       Clear header;
       Reset headerPos;
       Reset headerPage;
@@ -1088,137 +921,102 @@ Dcl-Proc #$XLSXWkSh EXPORT;
       If Args.Arg(x).Value(2)<>' ';
         Header.Font = %Trim(Args.Arg(x).Value(2));
       EndIf;
-      If rvl(Args.Arg(x).Value(3))>=1 and
-         rvl(Args.Arg(x).Value(3))<=409;
+      If rvl(Args.Arg(x).Value(3))>=1 and rvl(Args.Arg(x).Value(3))<=409;
         Header.FontSize = rvl(Args.Arg(x).Value(3));
       EndIf;
       // Process optional values in 4-13
       For y = 4 To 13;
         If Args.Arg(x).Value(y)<>' ';
-          If lowfy(Args.Arg(x).Value(y))='underline';
+          If %lower(Args.Arg(x).Value(y)) = 'underline';
             Header.Underline='s';
-          EndIf;
-          If lowfy(Args.Arg(x).Value(y))='doubleunderline';
+          ElseIf %lower(Args.Arg(x).Value(y)) = 'doubleunderline';
             Header.Underline='d';
-          EndIf;
-          If lowfy(Args.Arg(x).Value(y))='bold';
+          ElseIf %lower(Args.Arg(x).Value(y)) = 'bold';
             Header.Bold=*on;
-          EndIf;
-          If lowfy(Args.Arg(x).Value(y))='italic';
+          ElseIf %lower(Args.Arg(x).Value(y)) = 'italic';
             Header.Italic=*on;
-          EndIf;
-          If lowfy(Args.Arg(x).Value(y))='strikethrough';
+          ElseIf %lower(Args.Arg(x).Value(y)) = 'strikethrough';
             Header.Strikethrough=*on;
-          EndIf;
-          If lowfy(Args.Arg(x).Value(y))='subscript';
+          ElseIf %lower(Args.Arg(x).Value(y)) = 'subscript';
             Header.TypeOffset='s';
-          EndIf;
-          If lowfy(Args.Arg(x).Value(y))='superscript';
+          ElseIf %lower(Args.Arg(x).Value(y)) = 'superscript';
             Header.TypeOffset='p';
-          EndIf;
-          If lowfy(Args.Arg(x).Value(y))='left' or
-             lowfy(Args.Arg(x).Value(y))='center' or
-             lowfy(Args.Arg(x).Value(y))='right';
-            HeaderPos=lowfy(Args.Arg(x).Value(y));
-          EndIf;
-          If lowfy(Args.Arg(x).Value(y))='odd' or
-             lowfy(Args.Arg(x).Value(y))='even' or
-             lowfy(Args.Arg(x).Value(y))='first';
-            HeaderPage=lowfy(Args.Arg(x).Value(y));
-          EndIf;
-          If lowfy(Args.Arg(x).Value(y))='color';
-            Header.Color=GetColor(upify(Args.Arg(x).Value(y+1)));
-          EndIf;
-          If lowfy(Args.Arg(x).Value(y))='normalfont';
+          ElseIf %lower(Args.Arg(x).Value(y)) in %list('left':'center':'right');
+            HeaderPos=%lower(Args.Arg(x).Value(y));
+          ElseIf %lower(Args.Arg(x).Value(y)) in %list('odd':'even':'first');
+            HeaderPage=%lower(Args.Arg(x).Value(y));
+          ElseIf %lower(Args.Arg(x).Value(y)) = 'color';
+            Header.Color=GetColor(%upper(Args.Arg(x).Value(y+1)));
+          ElseIf %lower(Args.Arg(x).Value(y)) = 'normalfont';
             Header.NormalFont=*on;
           EndIf;
         EndIf;
       EndFor;
       // add the header DS to the correct header or footer DS
-      If Args.Arg(x).Key='HEADER' and
-         HeaderPos='left' and headerPage='first';
+      If Args.Arg(x).Key='HEADER' and HeaderPos='left' and headerPage='first';
         WorkSheet.Headers(1)=Header;
       EndIf;
-      If Args.Arg(x).Key='HEADER' and
-         HeaderPos='center' and headerPage='first';
+      If Args.Arg(x).Key='HEADER' and HeaderPos='center' and headerPage='first';
         WorkSheet.Headers(2)=Header;
       EndIf;
-      If Args.Arg(x).Key='HEADER' and
-         HeaderPos='right' and headerPage='first';
+      If Args.Arg(x).Key='HEADER' and HeaderPos='right' and headerPage='first';
         WorkSheet.Headers(3)=Header;
       EndIf;
-      If Args.Arg(x).Key='HEADER' and
-         HeaderPos='left' and headerPage='odd';
+      If Args.Arg(x).Key='HEADER' and HeaderPos='left' and headerPage='odd';
         WorkSheet.Headers(4)=Header;
       EndIf;
-      If Args.Arg(x).Key='HEADER' and
-         HeaderPos='center' and headerPage='odd';
+      If Args.Arg(x).Key='HEADER' and HeaderPos='center' and headerPage='odd';
         WorkSheet.Headers(5)=Header;
       EndIf;
-      If Args.Arg(x).Key='HEADER' and
-         HeaderPos='right' and headerPage='odd';
+      If Args.Arg(x).Key='HEADER' and HeaderPos='right' and headerPage='odd';
         WorkSheet.Headers(6)=Header;
       EndIf;
-      If Args.Arg(x).Key='HEADER' and
-         HeaderPos='left' and headerPage='even';
+      If Args.Arg(x).Key='HEADER' and HeaderPos='left' and headerPage='even';
         WorkSheet.Headers(7)=Header;
       EndIf;
-      If Args.Arg(x).Key='HEADER' and
-         HeaderPos='center' and headerPage='even';
+      If Args.Arg(x).Key='HEADER' and HeaderPos='center' and headerPage='even';
         WorkSheet.Headers(8)=Header;
       EndIf;
-      If Args.Arg(x).Key='HEADER' and
-         HeaderPos='right' and headerPage='even';
+      If Args.Arg(x).Key='HEADER' and HeaderPos='right' and headerPage='even';
         WorkSheet.Headers(9)=Header;
       EndIf;
-      If Args.Arg(x).Key='FOOTER' and
-         HeaderPos='left' and headerPage='first';
+      If Args.Arg(x).Key='FOOTER' and HeaderPos='left' and headerPage='first';
         WorkSheet.Footers(1)=Header;
       EndIf;
-      If Args.Arg(x).Key='FOOTER' and
-         HeaderPos='center' and headerPage='first';
+      If Args.Arg(x).Key='FOOTER' and HeaderPos='center' and headerPage='first';
         WorkSheet.Footers(2)=Header;
       EndIf;
-      If Args.Arg(x).Key='FOOTER' and
-         HeaderPos='right' and headerPage='first';
+      If Args.Arg(x).Key='FOOTER' and HeaderPos='right' and headerPage='first';
         WorkSheet.Footers(3)=Header;
       EndIf;
-      If Args.Arg(x).Key='FOOTER' and
-         HeaderPos='left' and headerPage='odd';
+      If Args.Arg(x).Key='FOOTER' and HeaderPos='left' and headerPage='odd';
         WorkSheet.Footers(4)=Header;
       EndIf;
-      If Args.Arg(x).Key='FOOTER' and
-         HeaderPos='center' and headerPage='odd';
+      If Args.Arg(x).Key='FOOTER' and HeaderPos='center' and headerPage='odd';
         WorkSheet.Footers(5)=Header;
       EndIf;
-      If Args.Arg(x).Key='FOOTER' and
-         HeaderPos='right' and headerPage='odd';
+      If Args.Arg(x).Key='FOOTER' and HeaderPos='right' and headerPage='odd';
         WorkSheet.Footers(6)=Header;
       EndIf;
-      If Args.Arg(x).Key='FOOTER' and
-         HeaderPos='left' and headerPage='even';
+      If Args.Arg(x).Key='FOOTER' and HeaderPos='left' and headerPage='even';
         WorkSheet.Footers(7)=Header;
       EndIf;
-      If Args.Arg(x).Key='FOOTER' and
-         HeaderPos='center' and headerPage='even';
+      If Args.Arg(x).Key='FOOTER' and HeaderPos='center' and headerPage='even';
         WorkSheet.Footers(8)=Header;
       EndIf;
-      If Args.Arg(x).Key='FOOTER' and
-         HeaderPos='right' and headerPage='even';
+      If Args.Arg(x).Key='FOOTER' and HeaderPos='right' and headerPage='even';
         WorkSheet.Footers(9)=Header;
       EndIf;
     EndIf;
 
     // Todo left off here
 
-    If Args.Arg(x).Key='FILTER' and
-       Args.Arg(x).Values=1;
+    If Args.Arg(x).Key='FILTER' and Args.Arg(x).Values=1;
       WorkSheet.FilterStart='A1';
       WorkSheet.FilterEnd=Args.Arg(x).Value(1);
     EndIf;
 
-    If Args.Arg(x).Key='FILTER' and
-       Args.Arg(x).Values=2;
+    If Args.Arg(x).Key='FILTER' and Args.Arg(x).Values=2;
       WorkSheet.FilterStart=Args.Arg(x).Value(1);
       WorkSheet.FilterEnd=Args.Arg(x).Value(2);
     EndIf;
@@ -1236,28 +1034,20 @@ End-Proc;
 
 Dcl-Proc strSheet;
 
-  // Change the status to 2 to prevent any sheet settings
-  // from being changed.
+  // Change the status to 2 to prevent any sheet settings from being changed.
   WorkSheet.Status=2;
 
   // Create the sheet file and open it for writing
-  openf(%Trim(WorkBook.TempFolder)+'xl/worksheets/sheet'+
-            %Char(Workbook.SheetCount+1)+'.xml');
+  openf(%Trim(WorkBook.TempFolder)+'xl/worksheets/sheet' + %Char(Workbook.SheetCount+1)+'.xml');
 
   // Write everything that comes before the sheet data
   writef('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+eor);
-  writef('<worksheet +
-          xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/+
-                 main" +
-         xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/+
-                   relationships" +
-          xmlns:mc="http://schemas.openxmlformats.org/markup-+
-                    compatibility/2006">'+eor);
+  writef('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" +
+           xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" +
+           xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">'+eor);
 
   // Add columns if any are set
-  If WorkSheet.PrintScale=-1 or           // Fit all columns on one page
-     WorkSheet.PrintScale=-2 or           // Fit all rows on one page
-     WorkSheet.PrintScale=-3;             // Fit full sheet on one page
+  If WorkSheet.PrintScale in %list(-1,-2,-3);  // Fit all columns, rows or sheet on one page
     writef(tab+'<sheetPr>'+eor+
            tab+tab+'<pageSetUpPr fitToPage="1"/>'+eor+
            tab+'</sheetPr>+eor');
@@ -1340,19 +1130,18 @@ Dcl-Proc strSheet;
 
 End-Proc;
 
+
 // EndSheet - Closes out a worksheet
 //    This gets called maunally,
 //    if a new sheet is started and the current sheet status is 1,
 //    or if a workbook is closed and the current sheet status is 1.
-
-//    This sets closes the current sheet and finishes writing the
-//    end of the file. It sets the status to 2 so no more data can
+//
+//    This closes the current sheet and finishes writing the
+//    end of the file. It sets the status to 3 so no more data can
 //   be added.
-
 Dcl-Proc EndSheet;
 
-  // Change the status to 3 to prevent any more data from
-  // being added.
+  // Change the status to 3 to prevent any more data from being added.
   WorkSheet.Status=3;
 
   // Write everything that comes after the sheet data
@@ -1379,7 +1168,7 @@ Dcl-Proc EndSheet;
 
   // Add Page Margins
   writef(tab+'<pageMargins +
-              Left="'   + %Char(WorkSheet.MarginLeft)   + '" +
+              left="'   + %Char(WorkSheet.MarginLeft)   + '" +
               right="'  + %Char(WorkSheet.MarginRight)  + '" +
               top="'    + %Char(WorkSheet.MarginTop)    + '" +
               bottom="' + %Char(WorkSheet.MarginBottom) + '" +
@@ -1424,8 +1213,7 @@ Dcl-Proc EndSheet;
     EndIf;
     writef('>'+eor);
     // Add Odd Header row
-    If Worksheet.headers(4).text<>' ' or
-       Worksheet.headers(5).text<>' ' or
+    If Worksheet.headers(4).text<>' ' or Worksheet.headers(5).text<>' ' or
        Worksheet.headers(6).text<>' ';
       writef(tab+tab+'<oddHeader>');
       If Worksheet.headers(4).text<>' ';
@@ -1443,8 +1231,7 @@ Dcl-Proc EndSheet;
       writef('</oddHeader>'+eor);
     EndIf;
     // Add Odd Footer row
-    If Worksheet.footers(4).text<>' ' or
-       Worksheet.footers(5).text<>' ' or
+    If Worksheet.footers(4).text<>' ' or Worksheet.footers(5).text<>' ' or
        Worksheet.footers(6).text<>' ';
       writef(tab+tab+'<oddFooter>');
       If Worksheet.footers(4).text<>' ';
@@ -1462,8 +1249,7 @@ Dcl-Proc EndSheet;
       writef('</oddFooter>'+eor);
     EndIf;
     // Add Even Header row
-    If Worksheet.headers(7).text<>' ' or
-       Worksheet.headers(8).text<>' ' or
+    If Worksheet.headers(7).text<>' ' or Worksheet.headers(8).text<>' ' or
        Worksheet.headers(9).text<>' ';
       writef(tab+tab+'<evenHeader>');
       If Worksheet.headers(7).text<>' ';
@@ -1481,8 +1267,7 @@ Dcl-Proc EndSheet;
       writef('</evenHeader>'+eor);
     EndIf;
     // Add Even Footer row
-    If Worksheet.Footers(7).text<>' ' or
-       Worksheet.Footers(8).text<>' ' or
+    If Worksheet.Footers(7).text<>' ' or Worksheet.Footers(8).text<>' ' or
        Worksheet.Footers(9).text<>' ';
       writef(tab+tab+'<evenFooter>');
       If Worksheet.Footers(7).text<>' ';
@@ -1500,8 +1285,7 @@ Dcl-Proc EndSheet;
       writef('</evenFooter>'+eor);
     EndIf;
     // Add First Header row
-    If Worksheet.headers(1).text<>' ' or
-       Worksheet.headers(2).text<>' ' or
+    If Worksheet.headers(1).text<>' ' or Worksheet.headers(2).text<>' ' or
        Worksheet.headers(3).text<>' ';
       writef(tab+tab+'<firstHeader>');
       If Worksheet.headers(1).text<>' ';
@@ -1519,8 +1303,7 @@ Dcl-Proc EndSheet;
       writef('</firstHeader>'+eor);
     EndIf;
     // Add First Footer row
-    If Worksheet.Footers(1).text<>' ' or
-       Worksheet.Footers(2).text<>' ' or
+    If Worksheet.Footers(1).text<>' ' or Worksheet.Footers(2).text<>' ' or
        Worksheet.Footers(3).text<>' ';
       writef(tab+tab+'<firstFooter>');
       If Worksheet.Footers(1).text<>' ';
@@ -1573,13 +1356,11 @@ End-Proc;
 //             Merge  = number of cell to merg into this one.
 Dcl-Proc #$XLSXChar export;
   Dcl-Pi *n;
-    Char  Char(4096) const;
-    Style Varchar(50) const options(*nopass : *omit);
-    Merge zoned(2:0) const options(*nopass : *OMIT);
+    char  varchar(30000) const;
+    style varchar(50) const options(*nopass : *omit);
+    merge packed(2) const options(*nopass : *OMIT);
   End-Pi;
-
-  Dcl-S Field Char(4096);
-  Dcl-S i zoned(2);
+  Dcl-S i packed(5);
 
   // If the work sheet is not open given an error
   If WorkSheet.Status=0;
@@ -1606,10 +1387,8 @@ Dcl-Proc #$XLSXChar export;
     EndIf;
   EndIf;
 
-  // If this cell will extend past row 16384 give warning and wrap
-  // to the next column
-  If WorkSheet.col>16384 or
-     (%Parms>=3 and %Addr(Merge) <> *null and Merge>0
+  // If this cell will extend past row 16384 give warning and wrap to the next column
+  If WorkSheet.col>16384 or (%Parms>=3 and %Addr(Merge) <> *null and Merge>0
      and WorkSheet.col+1+Merge>16384);
     SndMsg('#$XLSXChar':4004:1);
     #$XLSXNext();
@@ -1623,7 +1402,6 @@ Dcl-Proc #$XLSXChar export;
   EndIf;
 
   // Add Value and style to cell if passed
-  Field=%Trim(Char);
   If %Parms>=2 and %Addr(Style)<>*null;
     writef(tab+tab+tab+'<c r="'+ColRow()+'" +
                        t="inlineStr" +
@@ -1632,7 +1410,7 @@ Dcl-Proc #$XLSXChar export;
     writef(tab+tab+tab+'<c r="'+colrow()+'" t="inlineStr">'+eor);
   EndIf;
   writef(tab+tab+tab+tab+'<is>'+eor);
-  writef(tab+tab+tab+tab+tab+'<t>'+XMLESC(field)+'</t>'+eor);
+  writef(tab+tab+tab+tab+tab+'<t>'+XMLESC(char)+'</t>'+eor);
   writef(tab+tab+tab+tab+'</is>'+eor);
   writef(tab+tab+tab+'</c>'+eor);
 
@@ -1664,9 +1442,9 @@ End-Proc;
 //             Merge  = number of cell to merg into this one.
 Dcl-Proc #$XLSXNumr EXPORT;
   Dcl-Pi *n;
-    Number Zoned(30:10) const;
-    Style  Varchar(50)  const options(*nopass:*omit);
-    Merge  Zoned(2:0) const options(*nopass : *OMIT);
+    Number packed(30:10) const;
+    Style  varchar(50)  const options(*nopass:*omit);
+    Merge  packed(2:0) const options(*nopass : *OMIT);
   End-Pi;
 
   // If the work sheet is not open given an error
@@ -1694,8 +1472,7 @@ Dcl-Proc #$XLSXNumr EXPORT;
     StrSheet();
   EndIf;
 
-  // If this cell will extend past row 16384 give warning and wrap
-  // to the next column
+  // If this cell will extend past row 16384 give warning and wrap to the next column
   If WorkSheet.col>16384 or
      (%Parms>=3 and %Addr(Merge) <> *null and Merge>0
       and WorkSheet.col+1+Merge>16384);
@@ -1750,7 +1527,7 @@ Dcl-Proc #$XLSXDate Export;
   Dcl-Pi *n;
     Date date const;
     psStyle Varchar(50) const options(*nopass:*omit);
-    psMerge zoned(2:0) Const options(*nopass : *OMIT);
+    psMerge packed(2:0) Const options(*nopass : *OMIT);
   End-Pi;
   Dcl-S ExcelDate packed(8:0);
   Dcl-S Style     Varchar(50);
@@ -1781,10 +1558,8 @@ Dcl-Proc #$XLSXDate Export;
     StrSheet();
   EndIf;
 
-  // If this cell will extend past row 16384 give warning and wrap
-  // to the next column
-  If WorkSheet.col>16384 or
-      (%Parms>=3 and %Addr(Merge) <> *null and Merge>0
+  // If this cell will extend past row 16384 give warning and wrap to the next column
+  If WorkSheet.col>16384 or (%Parms>=3 and %Addr(Merge) <> *null and Merge>0
        and WorkSheet.col+1+Merge>16384);
     SndMsg('#$XLSXDate':4004:1);
     #$XLSXNext();
@@ -1815,15 +1590,16 @@ Dcl-Proc #$XLSXDate Export;
 
 End-Proc;
 
-// #$XLSXYYMD- Add a date string to the open XLS file
 
+// #$XLSXYYMD- Add a date string to the open XLS file
+//
 //     input:  Date   = Field containing the date to add YYYYMMDD
 //             Style  = Name of a previously defined style
 //             Merge  = number of cell to merg into this one.
 Dcl-Proc #$XLSXYYMD EXPORT;
   Dcl-Pi *n;
     psDate packed(8) const;
-    psStyle Varchar(50) const options(*nopass:*omit);
+    psStyle varchar(50) const options(*nopass:*omit);
     psMerge packed(2) Const options(*nopass : *OMIT);
   End-Pi;
   Dcl-S ExcelDate zoned(8);
@@ -1856,11 +1632,9 @@ Dcl-Proc #$XLSXYYMD EXPORT;
     StrSheet();
   EndIf;
 
-  // If this cell will extend past row 16384 give warning and wrap
-  // to the next column
+  // If this cell will extend past row 16384 give warning and wrap to the next column
   If WorkSheet.col>16384 or
-      (%Parms>=3 and %Addr(Merge) <> *null and Merge>0
-       and WorkSheet.col+1+Merge>16384);
+      (%Parms>=3 and %Addr(Merge) <> *null and Merge>0 and WorkSheet.col+1+Merge>16384);
     SndMsg('#$XLSXYYMD':4004:1);
     #$XLSXNext();
   EndIf;
@@ -1891,8 +1665,9 @@ Dcl-Proc #$XLSXYYMD EXPORT;
 
 End-Proc;
 
-// #$XLSXMDY - Add a date string to the open XLS file
 
+// #$XLSXMDY - Add a date string to the open XLS file
+//
 //     input:  Date   = Field containing the date to add MMDDYY
 //             Style  = Name of a previously defined style
 //             Merge  = number of cell to merg into this one.
@@ -1932,8 +1707,7 @@ Dcl-Proc #$XLSXMDY EXPORT;
     StrSheet();
   EndIf;
 
-  // If this cell will extend past row 16384 give warning and wrap
-  // to the next column
+  // If this cell will extend past row 16384 give warning and wrap to the next column
   If WorkSheet.col>16384 or
       (%Parms>=3 and %Addr(Merge) <> *null and Merge>0
        and WorkSheet.col+1+Merge>16384);
@@ -2008,8 +1782,7 @@ Dcl-Proc #$XLSXMDYY EXPORT;
     StrSheet();
   EndIf;
 
-  // If this cell will extend past row 16384 give warning and wrap
-  // to the next column
+  // If this cell will extend past row 16384 give warning and wrap to the next column
   If WorkSheet.col>16384 or
       (%Parms>=3 and %Addr(Merge) <> *null and Merge>0
        and WorkSheet.col+1+Merge>16384);
@@ -2131,8 +1904,7 @@ Dcl-Proc #$XLSXForm EXPORT;
     StrSheet();
   EndIf;
 
-  // If this cell will extend past row 16384 give warning and wrap
-  // to the next column
+  // If this cell will extend past row 16384 give warning and wrap to the next column
   If WorkSheet.col>16384 or
       (%Parms>=3 and %Addr(Merge) <> *null and Merge>0
        and WorkSheet.col+1+Merge>16384);
@@ -2179,9 +1951,7 @@ Dcl-Proc #$XLSXForm EXPORT;
 End-Proc;
 
 
-// ------------------------------------------------------------------ *
 // #$XLSXNull - Skips a column, but does not create the cell
-// ------------------------------------------------------------------ *
 Dcl-Proc #$XLSXnull EXPORT;
 
   // If the work sheet is not open given an error
@@ -2201,8 +1971,7 @@ Dcl-Proc #$XLSXnull EXPORT;
     StrSheet();
   EndIf;
 
-  // If this cell will extend past row 16384 give warning and wrap
-  // to the next column
+  // If this cell will extend past row 16384 give warning and wrap to the next column
   If WorkSheet.col>16384;
     SndMsg('#$XLSXNull':4004:1);
     #$XLSXNext();
@@ -2212,8 +1981,8 @@ Dcl-Proc #$XLSXnull EXPORT;
 
 End-Proc;
 
-// #$XLSXNext - Write a line to the open XLSX file and start the next
-//             record
+
+// #$XLSXNext - Write a line to the open XLSX file and start the next record
 Dcl-Proc #$XLSXNext EXPORT;
 
   // If the work sheet is not open given an error
@@ -2242,6 +2011,7 @@ Dcl-Proc #$XLSXNext EXPORT;
 
 End-Proc;
 
+
 // #$XLSXCell - Returns cell or range to relative current position.
 Dcl-Proc #$XLSXCell EXPORT;
   Dcl-Pi *n Varchar(20);
@@ -2252,8 +2022,6 @@ Dcl-Proc #$XLSXCell EXPORT;
   Dcl-S HorzOffset packed(9);
   Dcl-S VertRange packed(9);
   Dcl-S HorzRange packed(9);
-  Dcl-S BegRangeCol# packed(9);
-  Dcl-S BegRangeRow# packed(9);
   Dcl-S Col# packed(9);
   Dcl-S Row# packed(9);
   Dcl-S Output Varchar(20);
@@ -2308,25 +2076,15 @@ Dcl-Proc #$XLSXCell EXPORT;
 
   EndSr;
 
-  // load arguments into Args data structure
+  // load arguments into Args data structure, copies in the LoadArgs subr, used in a lot of procs
   /Copy #$XLSX1.0/QRPGLESRC,#$XLSXLARG
 
   // Validate passed argument
   BegSr ValArg;
 
     // Validate Keys
-    If Args.Arg(x).Key<>'VERTICALRANGE' and
-       Args.Arg(x).Key<>'VR' and
-       Args.Arg(x).Key<>'HORIZONTALRANGE' and
-       Args.Arg(x).Key<>'HR' and
-       Args.Arg(x).Key<>'RANGE' and
-       Args.Arg(x).Key<>'R' and
-       Args.Arg(x).Key<>'VERTICALOFFSET' and
-       Args.Arg(x).Key<>'VO' and
-       Args.Arg(x).Key<>'HORIZONTALOFFSET' and
-       Args.Arg(x).Key<>'HO' and
-       Args.Arg(x).Key<>'OFFSET' and
-       Args.Arg(x).Key<>'O';
+    If not (Args.Arg(x).Key in %list('VERTICALRANGE':'VR':'HORIZONTALRANGE':'HR'
+       :'RANGE':'R':'VERTICALOFFSET':'VO':'HORIZONTALOFFSET':'HO':'OFFSET':'O'));
       Args.Arg(x).Error='Y';
       SndMsg(Args.Arg(x).Key:6000);
       LeaveSr;
@@ -2389,8 +2147,7 @@ Dcl-Proc #$XLSXCell EXPORT;
       // make sure exactly 4 parameters are passed
       If (Args.Arg(x).Values<>4);
         Args.Arg(x).Error='Y';
-        SndMsg('Range (R)':6003:0:'4'
-               :%Char(Args.Arg(x).Values):Args.Arg(x).Parm);
+        SndMsg('Range (R)':6003:0:'4':%Char(Args.Arg(x).Values):Args.Arg(x).Parm);
         LeaveSr;
       EndIf;
       // make sure parameter 1 is a valid number
@@ -2424,15 +2181,13 @@ Dcl-Proc #$XLSXCell EXPORT;
       // make sure 1 parameter is passed
       If (Args.Arg(x).Values<>1);
         Args.Arg(x).Error='Y';
-        SndMsg('Vertical Offset (VO)':6003:0:'1'
-               :%Char(Args.Arg(x).Values):Args.Arg(x).Parm);
+        SndMsg('Vertical Offset (VO)':6003:0:'1':%Char(Args.Arg(x).Values):Args.Arg(x).Parm);
         LeaveSr;
       EndIf;
       // make sure parameter 1 is a valid number
       If (VNum(Args.Arg(x).Value(1)));
         Args.Arg(x).Error='Y';
-        SndMsg('Vertical Range (VR)':6001:0
-               :Args.Arg(x).Parm:'1');
+        SndMsg('Vertical Range (VR)':6001:0 :Args.Arg(x).Parm:'1');
         LeaveSr;
       EndIf;
     EndIf;
@@ -2442,15 +2197,13 @@ Dcl-Proc #$XLSXCell EXPORT;
       // make sure 1 parameter is passed
       If (Args.Arg(x).Values<>1);
         Args.Arg(x).Error='Y';
-        SndMsg('Horizontal Offset (HO)':6003:0:'1'
-               :%Char(Args.Arg(x).Values):Args.Arg(x).Parm);
+        SndMsg('Horizontal Offset (HO)':6003:0:'1':%Char(Args.Arg(x).Values):Args.Arg(x).Parm);
         LeaveSr;
       EndIf;
       // make sure parameter 1 is a valid number
       If (VNum(Args.Arg(x).Value(1)));
         Args.Arg(x).Error='Y';
-        SndMsg('Horizontal Offset (HO)':6002:0
-               :Args.Arg(x).Parm:'1');
+        SndMsg('Horizontal Offset (HO)':6002:0:Args.Arg(x).Parm:'1');
         LeaveSr;
       EndIf;
     EndIf;
@@ -2460,22 +2213,19 @@ Dcl-Proc #$XLSXCell EXPORT;
       // make sure 1 parameter is passed
       If (Args.Arg(x).Values<>2);
         Args.Arg(x).Error='Y';
-        SndMsg('Offset (O)':6003:0:'2'
-               :%Char(Args.Arg(x).Values):Args.Arg(x).Parm);
+        SndMsg('Offset (O)':6003:0:'2':%Char(Args.Arg(x).Values):Args.Arg(x).Parm);
         LeaveSr;
       EndIf;
       // make sure parameter 1 is a valid number
       If (VNum(Args.Arg(x).Value(1)));
         Args.Arg(x).Error='Y';
-        SndMsg('Offset (O)':6002:0
-               :Args.Arg(x).Parm:'1');
+        SndMsg('Offset (O)':6002:0:Args.Arg(x).Parm:'1');
         LeaveSr;
       EndIf;
       // make sure parameter 2 is a valid number
       If (VNum(Args.Arg(x).Value(2)));
         Args.Arg(x).Error='Y';
-        SndMsg('Offset (O)':6002:0
-               :Args.Arg(x).Parm:'2');
+        SndMsg('Offset (O)':6002:0:Args.Arg(x).Parm:'2');
         LeaveSr;
       EndIf;
     EndIf;
@@ -2563,10 +2313,8 @@ Dcl-Proc #$XLSXCell EXPORT;
     If (Worksheet.row-VertOffset<=0);
       SndMsg('row 1':6004:0:'2'
             :%Char(Worksheet.Row):%Char(Worksheet.Col)
-            :'The current Row of ' +
-              %Char(Worksheet.Row) +
-             ' minus the vertical offset of ' +
-              %Char(VertOffset) +
+            :'The current Row of ' + %Char(Worksheet.Row) +
+             ' minus the vertical offset of ' + %Char(VertOffset) +
              ' created the invalid cell reference.');
       LeaveSr;
     EndIf;
@@ -2575,40 +2323,30 @@ Dcl-Proc #$XLSXCell EXPORT;
     If (Worksheet.col-HorzOffset<=0);
       SndMsg('column 1':6004:0:'2'
             :%Char(Worksheet.Row):%Char(Worksheet.Col)
-            :'The current colum of ' +
-              %Char(Worksheet.Col) +
-             ' minus the horizontal offset of ' +
-              %Char(HorzOffset) +
+            :'The current colum of ' + %Char(Worksheet.Col) +
+             ' minus the horizontal offset of ' + %Char(HorzOffset) +
              ' created the invalid cell reference.');
       LeaveSr;
     EndIf;
 
-    // Make sure a vertical offset plus the vertical range
-    // doesn't go before the start of the page
+    // Make sure a vertical offset plus the vertical range  doesn't go before the start of the page
     If (Worksheet.row-VertOffset-VertRange+1<=0);
       SndMsg('row 1':6004:0:'2'
             :%Char(Worksheet.Row):%Char(Worksheet.Col)
-            :'The current Row of ' +
-              %Char(Worksheet.Row) +
-             ' minus the vertical offset of ' +
-              %Char(VertOffset) +
-             ' minus the vertical range of ' +
-              %Char(VertRange) +
+            :'The current Row of ' + %Char(Worksheet.Row) +
+             ' minus the vertical offset of ' + %Char(VertOffset) +
+             ' minus the vertical range of ' + %Char(VertRange) +
              ' created the invalid cell reference.');
       LeaveSr;
     EndIf;
 
-    // Make sure a horizontal offset plus the Horizontal range
-    // doesn't go before the start of the page
+    // Make sure a horizontal offset plus the Horizontal range doesn't go before the start of page
     If (Worksheet.col-HorzOffset-HorzRange+1<=0);
       SndMsg('column 1':6004:0:'2'
             :%Char(Worksheet.Row):%Char(Worksheet.Col)
-            :'The current column of ' +
-              %Char(Worksheet.Col) +
-             ' minus the horizontal offset of ' +
-              %Char(HorzOffset) +
-             ' minus the horizontal range of ' +
-              %Char(HorzRange) +
+            :'The current column of ' + %Char(Worksheet.Col) +
+             ' minus the horizontal offset of ' + %Char(HorzOffset) +
+             ' minus the horizontal range of ' + %Char(HorzRange) +
              ' created the invalid cell reference.');
       LeaveSr;
     EndIf;
@@ -2691,249 +2429,100 @@ Dcl-Proc #$XLSXStyle EXPORT;
 
   EndSr;
 
-  // load arguments into Args data structure
+  // load arguments into Args data structure, copies in the LaodArgs subr, used in a lot of procs
   /Copy #$XLSX1.0/QRPGLESRC,#$XLSXLARG
 
   // Validate passed argument
   BegSr ValArg;
 
     // Validate Keys
-    If Args.Arg(x).Key<>'NAME' and                    // Style Name
-       Args.Arg(x).Key<>'BOLDWEIGHT' and              // Font Options
-       Args.Arg(x).Key<>'POINTSIZE' and
-       Args.Arg(x).Key<>'FONT' and
-       Args.Arg(x).Key<>'COLOR' and
-       Args.Arg(x).Key<>'ITALIC' and
-       Args.Arg(x).Key<>'STRIKEOUT' and
-       Args.Arg(x).Key<>'TYPEOFFSET' and
-       Args.Arg(x).Key<>'UNDERLINE' and
-       Args.Arg(x).Key<>'ALIGNMENT' and               // Style Options
-       Args.Arg(x).Key<>'DATAFORMAT' and
-       Args.Arg(x).Key<>'BORDER' and
-       Args.Arg(x).Key<>'BORDERBOTTOM' and
-       Args.Arg(x).Key<>'BORDERTOP' and
-       Args.Arg(x).Key<>'BORDERLEFT' and
-       Args.Arg(x).Key<>'BORDERRIGHT' and
-       Args.Arg(x).Key<>'BORDERDIAGONAL' and
-       Args.Arg(x).Key<>'DIAGONALOPTION' and
-       Args.Arg(x).Key<>'BORDERCOLOR' and
-       Args.Arg(x).Key<>'WRAPTEXT' and
-       Args.Arg(x).Key<>'FILLFOREGROUNDCOLOR' and
-       Args.Arg(x).Key<>'FILLBACKGROUNDCOLOR' and
-       Args.Arg(x).Key<>'FILLPATTERN' and
-       Args.Arg(x).Key<>'VERTICALALIGNMENT';
+    If not (Args.Arg(x).Key in %list('NAME':'BOLDWEIGHT':'POINTSIZE':'FONT':'COLOR':'ITALIC'
+      :'STRIKEOUT' :'TYPEOFFSET':'UNDERLINE':'ALIGNMENT':'DATAFORMAT':'BORDER':'BORDERBOTTOM'
+      :'BORDERTOP':'BORDERLEFT':'BORDERRIGHT':'BORDERDIAGONAL':'DIAGONALOPTION':'BORDERCOLOR'
+      :'WRAPTEXT':'FILLFOREGROUNDCOLOR':'FILLBACKGROUNDCOLOR':'FILLPATTERN':'VERTICALALIGNMENT'));
       Args.Arg(x).Error='Y';
       SndMsg(Args.Arg(x).Key:2002:1);
       LeaveSr;
     EndIf;
 
     // Validate Values
-    If Args.Arg(x).Key='NAME' and
-       Args.Arg(x).Value(1)=' ';
+    If Args.Arg(x).Key='NAME' and Args.Arg(x).Value(1)=' ';
       Args.Arg(x).Error='Y';
       SndMsg(Args.Arg(x).Key:2003:1:Args.Arg(x).Value(1));
       LeaveSr;
     EndIf;
 
     If Args.Arg(x).Key='BOLDWEIGHT' and
-       (Args.Arg(x).Value(1)<>'NORMAL' and
-        Args.Arg(x).Value(1)<>'BOLD');
+       (Args.Arg(x).Value(1)<>'NORMAL' and Args.Arg(x).Value(1)<>'BOLD');
       Args.Arg(x).Error='Y';
       SndMsg(Args.Arg(x).Key:2003:1:Args.Arg(x).Value(1));
       LeaveSr;
     EndIf;
 
     If Args.Arg(x).Key='POINTSIZE' and
-       (RVL(Args.Arg(x).Value(1))<1 or
-        RVL(Args.Arg(x).Value(1))>409);
+       (RVL(Args.Arg(x).Value(1))<1 or RVL(Args.Arg(x).Value(1))>409);
       Args.Arg(x).Error='Y';
       SndMsg(Args.Arg(x).Key:2003:1:Args.Arg(x).Value(1));
       LeaveSr;
     EndIf;
 
-    If Args.Arg(x).Key='FONT' and
-       Args.Arg(x).Value(1)=' ';
+    If Args.Arg(x).Key='FONT' and Args.Arg(x).Value(1)=' ';
       Args.Arg(x).Error='Y';
       SndMsg(Args.Arg(x).Key:2003:1:Args.Arg(x).Value(1));
       LeaveSr;
     EndIf;
 
     // TODO handle RBG and Theme colors
-    If (Args.Arg(x).Key='COLOR' or
-        Args.Arg(x).Key='FILLFOREGROUNDCOLOR' or
-        Args.Arg(x).Key='FILLBACKGROUNDCOLOR' or
-        Args.Arg(x).Key='BORDERCOLOR') and
-       Args.Arg(x).Value(1)<>'AQUA'            and
-       Args.Arg(x).Value(1)<>'49'              and
-       Args.Arg(x).Value(1)<>'BLACK'           and
-       Args.Arg(x).Value(1)<>'8'               and
-       Args.Arg(x).Value(1)<>'BLUE'            and
-       Args.Arg(x).Value(1)<>'12'              and
-       Args.Arg(x).Value(1)<>'BLUE_GREY'       and
-       Args.Arg(x).Value(1)<>'54'              and
-       Args.Arg(x).Value(1)<>'BRIGHT_GREEN'    and
-       Args.Arg(x).Value(1)<>'11'              and
-       Args.Arg(x).Value(1)<>'BROWN'           and
-       Args.Arg(x).Value(1)<>'60'              and
-       Args.Arg(x).Value(1)<>'CORAL'           and
-       Args.Arg(x).Value(1)<>'29'              and
-       Args.Arg(x).Value(1)<>'CORNFLOWER_BLUE' and
-       Args.Arg(x).Value(1)<>'24'              and
-       Args.Arg(x).Value(1)<>'DARK_BLUE'       and
-       Args.Arg(x).Value(1)<>'18'              and
-       Args.Arg(x).Value(1)<>'DARK_RED'        and
-       Args.Arg(x).Value(1)<>'16'              and
-       Args.Arg(x).Value(1)<>'DARK_TEAL'       and
-       Args.Arg(x).Value(1)<>'46'              and
-       Args.Arg(x).Value(1)<>'DARK_YELLOW'     and
-       Args.Arg(x).Value(1)<>'19'              and
-       Args.Arg(x).Value(1)<>'DARK_GOLD'       and
-       Args.Arg(x).Value(1)<>'51'              and
-       Args.Arg(x).Value(1)<>'DARK_GREEN'      and
-       Args.Arg(x).Value(1)<>'17'              and
-       Args.Arg(x).Value(1)<>'GREY_25'         and
-       Args.Arg(x).Value(1)<>'22'              and
-       Args.Arg(x).Value(1)<>'GREY_40'         and
-       Args.Arg(x).Value(1)<>'55'              and
-       Args.Arg(x).Value(1)<>'GREY_50'         and
-       Args.Arg(x).Value(1)<>'23'              and
-       Args.Arg(x).Value(1)<>'GREY_80'         and
-       Args.Arg(x).Value(1)<>'63'              and
-       Args.Arg(x).Value(1)<>'INDIGO'          and
-       Args.Arg(x).Value(1)<>'62'              and
-       Args.Arg(x).Value(1)<>'LAVENDER'        and
-       Args.Arg(x).Value(1)<>'46'              and
-       Args.Arg(x).Value(1)<>'LEMON_CHIFFON'   and
-       Args.Arg(x).Value(1)<>'26'              and
-       Args.Arg(x).Value(1)<>'LIGHT_BLUE'      and
-       Args.Arg(x).Value(1)<>'48'              and
-       Args.Arg(x).Value(1)<>'LIGHT_CORNFLOWER_BLUE' and
-       Args.Arg(x).Value(1)<>'31'              and
-       Args.Arg(x).Value(1)<>'LIGHT_GREEN'     and
-       Args.Arg(x).Value(1)<>'42'              and
-       Args.Arg(x).Value(1)<>'LIGHT_ORANGE'    and
-       Args.Arg(x).Value(1)<>'52'              and
-       Args.Arg(x).Value(1)<>'LIGHT_TURQUOISE' and
-       Args.Arg(x).Value(1)<>'27'              and
-       Args.Arg(x).Value(1)<>'LIGHT_YELLOW'    and
-       Args.Arg(x).Value(1)<>'43'              and
-       Args.Arg(x).Value(1)<>'LIME'            and
-       Args.Arg(x).Value(1)<>'50'              and
-       Args.Arg(x).Value(1)<>'MAROON'          and
-       Args.Arg(x).Value(1)<>'25'              and
-       Args.Arg(x).Value(1)<>'OLIVE_GREEN'     and
-       Args.Arg(x).Value(1)<>'59'              and
-       Args.Arg(x).Value(1)<>'ORANGE'          and
-       Args.Arg(x).Value(1)<>'53'              and
-       Args.Arg(x).Value(1)<>'ORCHID'          and
-       Args.Arg(x).Value(1)<>'28'           and
-       Args.Arg(x).Value(1)<>'PALE_BLUE'       and
-       Args.Arg(x).Value(1)<>'44'           and
-       Args.Arg(x).Value(1)<>'PINK'            and
-       Args.Arg(x).Value(1)<>'14'           and
-       Args.Arg(x).Value(1)<>'PLUM'            and
-       Args.Arg(x).Value(1)<>'61'           and
-       Args.Arg(x).Value(1)<>'RED'             and
-       Args.Arg(x).Value(1)<>'10'           and
-       Args.Arg(x).Value(1)<>'ROSE'            and
-       Args.Arg(x).Value(1)<>'45'           and
-       Args.Arg(x).Value(1)<>'ROYAL_BLUE'      and
-       Args.Arg(x).Value(1)<>'30'           and
-       Args.Arg(x).Value(1)<>'SEA_GREEN'       and
-       Args.Arg(x).Value(1)<>'57'           and
-       Args.Arg(x).Value(1)<>'SKY_BLUE'        and
-       Args.Arg(x).Value(1)<>'40'           and
-       Args.Arg(x).Value(1)<>'TAN'             and
-       Args.Arg(x).Value(1)<>'47'           and
-       Args.Arg(x).Value(1)<>'TEAL'            and
-       Args.Arg(x).Value(1)<>'21'           and
-       Args.Arg(x).Value(1)<>'TURQUOISE'       and
-       Args.Arg(x).Value(1)<>'15'           and
-       Args.Arg(x).Value(1)<>'VIOLET'          and
-       Args.Arg(x).Value(1)<>'20'           and
-       Args.Arg(x).Value(1)<>'WHITE'           and
-       Args.Arg(x).Value(1)<>'9'            and
-       Args.Arg(x).Value(1)<>'YELLOW'          and
-       Args.Arg(x).Value(1)<>'13'           and
-       Args.Arg(x).Value(1)<>'NORMAL'          and
-       Args.Arg(x).Value(1)<>'32767'        and
-       Args.Arg(x).Value(1)<>'AUTOMATIC'       and
-       Args.Arg(x).Value(1)<>'64'              and
-       %Len(Args.Arg(x).Value(1))<>8;
+    If Args.Arg(x).Key in %list('COLOR':'FILLFOREGROUNDCOLOR':'FILLBACKGROUNDCOLOR':'BORDERCOLOR')
+       and not (Args.Arg(x).Value(1) in %list('AQUA':'49':'BLACK':'8':'BLUE':'12':'BLUE_GREY'
+       :'54':'BRIGHT_GREEN':'11':'BROWN':'60':'CORAL':'29':'CORNFLOWER_BLUE':'24':'DARK_BLUE':'18'
+       :'DARK_RED':'16':'DARK_TEAL':'46':'DARK_YELLOW':'19':'DARK_GOLD':'51':'DARK_GREEN':'17'
+       :'GREY_25':'22':'GREY_40':'55':'GREY_50':'23':'GREY_80':'63':'INDIGO':'62':'LAVENDER':'46'
+       :'LEMON_CHIFFON':'26':'LIGHT_BLUE':'48':'LIGHT_CORNFLOWER_BLUE':'31':'LIGHT_GREEN':'42'
+       :'LIGHT_ORANGE':'52':'LIGHT_TURQUOISE':'27':'LIGHT_YELLOW':'43':'LIME':'50''MAROON':'25'
+       :'OLIVE_GREEN':'59':'ORANGE':'53':'ORCHID':'28':'PALE_BLUE':'44':'PINK':'14':'PLUM':'61'
+       :'RED':'10':'ROSE':'45':'ROYAL_BLUE':'30':'SEA_GREEN':'57':'SKY_BLUE':'40':'TAN':'47'
+       :'TEAL':'21':'TURQUOISE':'15':'VIOLET':'20':'WHITE':'9':'YELLOW':'13':'NORMAL':'32767'
+       :'AUTOMATIC':'64')) and %Len(Args.Arg(x).Value(1))<>8;
       Args.Arg(x).ERROR='Y';
       SndMsg(Args.Arg(x).Key:2003:1:Args.Arg(x).Value(1));
       LeaveSr;
     EndIf;
 
     If Args.Arg(x).Key='ITALIC' and
-       Args.Arg(x).Value(1)<>'ON'    and
-       Args.Arg(x).Value(1)<>'*ON'   and
-       Args.Arg(x).Value(1)<>'TRUE'  and
-       Args.Arg(x).Value(1)<>'1'     and
-       Args.Arg(x).Value(1)<>'Y'     and
-       Args.Arg(x).Value(1)<>'YES'   and
-       Args.Arg(x).Value(1)<>'OFF'   and
-       Args.Arg(x).Value(1)<>'*OFF'  and
-       Args.Arg(x).Value(1)<>'FALSE' and
-       Args.Arg(x).Value(1)<>'0'     and
-       Args.Arg(x).Value(1)<>'N'     and
-       Args.Arg(x).Value(1)<>'NO'    and
-       Args.Arg(x).ERROR='Y';
+       not( Args.Arg(x).Value(1) in %list('ON':'*ON':'TRUE':'1':'Y':'YES'
+                                         :'OFF':'*OFF':'FALSE':'0':'N''NO'));
+      Args.Arg(x).ERROR='Y';
       SndMsg(Args.Arg(x).Key:2003:1:Args.Arg(x).Value(1));
       LeaveSr;
     EndIf;
 
     If Args.Arg(x).Key='STRIKEOUT' and
-       Args.Arg(x).Value(1)<>'ON'    and
-       Args.Arg(x).Value(1)<>'*ON'   and
-       Args.Arg(x).Value(1)<>'TRUE'  and
-       Args.Arg(x).Value(1)<>'1'     and
-       Args.Arg(x).Value(1)<>'Y'     and
-       Args.Arg(x).Value(1)<>'YES'   and
-       Args.Arg(x).Value(1)<>'OFF'   and
-       Args.Arg(x).Value(1)<>'*OFF'  and
-       Args.Arg(x).Value(1)<>'FALSE' and
-       Args.Arg(x).Value(1)<>'0'     and
-       Args.Arg(x).Value(1)<>'N'     and
-       Args.Arg(x).Value(1)<>'NO'    and
-       Args.Arg(x).ERROR='Y';
+       not( Args.Arg(x).Value(1) in %list('ON':'*ON':'TRUE':'1':'Y':'YES'
+                                         :'OFF':'*OFF':'FALSE':'0':'N''NO'));
+      Args.Arg(x).ERROR='Y';
       SndMsg(Args.Arg(x).Key:2003:1:Args.Arg(x).Value(1));
       LeaveSr;
     EndIf;
 
     If Args.Arg(x).Key='TYPEOFFSET' and
-       Args.Arg(x).Value(1)<>'NONE' and
-       Args.Arg(x).Value(1)<>'0' and
-       Args.Arg(x).Value(1)<>'SUB' and
-       Args.Arg(x).Value(1)<>'SUBSCRIPT' and
-       Args.Arg(x).Value(1)<>'2' and
-       Args.Arg(x).Value(1)<>'SUP' and
-       Args.Arg(x).Value(1)<>'SUPERSCRIPT' and
-       Args.Arg(x).Value(1)<>'SUPER' and
-       Args.Arg(x).Value(1)<>'1';
+            not( Args.Arg(x).Value(1) in %list('ON':'*ON':'TRUE':'1':'Y':'YES'
+                                         :'OFF':'*OFF':'FALSE':'0':'N''NO'));
       Args.Arg(x).ERROR='Y';
       SndMsg(Args.Arg(x).Key:2003:1:Args.Arg(x).Value(1));
       LeaveSr;
     EndIf;
 
     If Args.Arg(x).Key='UNDERLINE' and
-       Args.Arg(x).Value(1)<>'NONE' and
-       Args.Arg(x).Value(1)<>'YES' and
-       Args.Arg(x).Value(1)<>'SINGLE' and
-       Args.Arg(x).Value(1)<>'DOUBLE';
+       not (Args.Arg(x).Value(1) in %list('NONE':'YES':'SINGLE':'DOUBLE'));
       Args.Arg(x).ERROR='Y';
       SndMsg(Args.Arg(x).Key:2003:1:Args.Arg(x).Value(1));
       LeaveSr;
     EndIf;
 
     If Args.Arg(x).Key='ALIGNMENT' and            // style options
-       Args.Arg(x).Value(1)<>'CENTER' and
-       Args.Arg(x).Value(1)<>'CENTER_SELECTION' and
-       Args.Arg(x).Value(1)<>'FILL' and
-       Args.Arg(x).Value(1)<>'GENERAL' and
-       Args.Arg(x).Value(1)<>'JUSTIFY' and
-       Args.Arg(x).Value(1)<>'LEFT' and
-       Args.Arg(x).Value(1)<>'RIGHT';
+       not(Args.Arg(x).Value(1) in %list('CENTER':'CENTER_SELECTION':'FILL':'GENERAL'
+         :'JUSTIFY':'LEFT':'RIGHT'));
       Args.Arg(x).ERROR='Y';
       SndMsg(Args.Arg(x).Key:2003:1:Args.Arg(x).Value(1));
       LeaveSr;
@@ -2941,54 +2530,25 @@ Dcl-Proc #$XLSXStyle EXPORT;
 
     If Args.Arg(x).Key='ALIGNMENT' and
        Args.Arg(x).Values=2 and
-       Args.Arg(x).Value(2)<>'TOP' and
-       Args.Arg(x).Value(2)<>'0' and
-       Args.Arg(x).Value(2)<>'CENTER' and
-       Args.Arg(x).Value(2)<>'1' and
-       Args.Arg(x).Value(2)<>'BOTTOM' and
-       Args.Arg(x).Value(2)<>'2' and
-       Args.Arg(x).Value(2)<>'JUSTIFY' and
-       Args.Arg(x).Value(2)<>'3' and
-       Args.Arg(x).Value(2)<>'DISTRIBUTED' and
-       Args.Arg(x).Value(2)<>'4';
+       not (Args.Arg(x).Value(2) in %list('TOP':'0':'CENTER':'1':'BOTTOM':'2':'JUSTIFY':'3'
+           :'DISTRIBUTED':'4'));
       Args.Arg(x).ERROR='Y';
       SndMsg(Args.Arg(x).Key:2003:1:Args.Arg(x).Value(1));
       LeaveSr;
     EndIf;
 
     If Args.Arg(x).Key='VERTICALALIGNMENT' and
-       Args.Arg(x).Value(1)<>'TOP' and
-       Args.Arg(x).Value(1)<>'0' and
-       Args.Arg(x).Value(1)<>'CENTER' and
-       Args.Arg(x).Value(1)<>'1' and
-       Args.Arg(x).Value(1)<>'BOTTOM' and
-       Args.Arg(x).Value(1)<>'2' and
-       Args.Arg(x).Value(1)<>'JUSTIFY' and
-       Args.Arg(x).Value(1)<>'3' and
-       Args.Arg(x).Value(1)<>'DISTRIBUTED' and
-       Args.Arg(x).Value(1)<>'4';
+       not (Args.Arg(x).Value(1) in %list('TOP':'0':'CENTER':'1':'BOTTOM':'2':'JUSTIFY':'3'
+           :'DISTRIBUTED':'4'));
       Args.Arg(x).ERROR='Y';
       SndMsg(Args.Arg(x).Key:2003:1:Args.Arg(x).Value(1));
       LeaveSr;
     EndIf;
 
-    If (Args.Arg(x).Key='BORDERBOTTOM' or
-        Args.Arg(x).Key='BORDERTOP' or
-        Args.Arg(x).Key='BORDERLEFT' or
-        Args.Arg(x).Key='BORDERRIGHT' or
-        Args.Arg(x).Key='BORDERDIAGONAL' ) and
-       Args.Arg(x).Value(1)<>'DASH_DOT' and
-       Args.Arg(x).Value(1)<>'DASH_DOT_DOT' and
-       Args.Arg(x).Value(1)<>'DASHED' and
-       Args.Arg(x).Value(1)<>'DOTTED' and
-       Args.Arg(x).Value(1)<>'DOUBLE' and
-       Args.Arg(x).Value(1)<>'HAIR' and
-       Args.Arg(x).Value(1)<>'MEDIUM' and
-       Args.Arg(x).Value(1)<>'MEDIUM_DASH_DOT' and
-       Args.Arg(x).Value(1)<>'MEDIUM_DASH_DOT_DOT' and
-       Args.Arg(x).Value(1)<>'MEDIUM_DASHED' and
-       Args.Arg(x).Value(1)<>'THIN' and
-       Args.Arg(x).Value(1)<>'NONE';
+    If Args.Arg(x).Key in %list('BORDERBOTTOM':'BORDERTOP':'BORDERLEFT':'BORDERRIGHT':
+                                'BORDERDIAGONAL')
+       and not (Args.Arg(x).Value(1) in %list('DASH_DOT':'DASH_DOT_DOT':'DASHED':'DOTTED':'DOUBLE'
+       :'HAIR':'MEDIUM':'MEDIUM_DASH_DOT':'MEDIUM_DASH_DOT_DOT':'MEDIUM_DASHED':'THIN':'NONE'));
       Args.Arg(x).ERROR='Y';
       SndMsg(Args.Arg(x).Key:2003:1:Args.Arg(x).Value(1));
       LeaveSr;
@@ -2997,19 +2557,8 @@ Dcl-Proc #$XLSXStyle EXPORT;
     // For Border, test up to the first 4 arguments
     If (Args.Arg(x).Key='BORDER');
       For y= 1 To 4;
-        If Args.Arg(x).Value(y)<>'DASH_DOT' and
-           Args.Arg(x).Value(y)<>'DASH_DOT_DOT' and
-           Args.Arg(x).Value(y)<>'DASHED' and
-           Args.Arg(x).Value(y)<>'DOTTED' and
-           Args.Arg(x).Value(y)<>'DOUBLE' and
-           Args.Arg(x).Value(y)<>'HAIR' and
-           Args.Arg(x).Value(y)<>'MEDIUM' and
-           Args.Arg(x).Value(y)<>'MEDIUM_DASH_DOT' and
-           Args.Arg(x).Value(y)<>'MEDIUM_DASH_DOT_DOT' and
-           Args.Arg(x).Value(y)<>'MEDIUM_DASHED' and
-           Args.Arg(x).Value(y)<>'THIN' and
-           Args.Arg(x).Value(y)<>'NONE' and
-           Args.Arg(x).Value(y)<>' ';
+        If not (Args.Arg(x).Value(y) in %list ('DASH_DOT':'DASH_DOT_DOT':'DASHED':'DOTTED':'DOUBLE'
+        :'HAIR':'MEDIUM':'MEDIUM_DASH_DOT':'MEDIUM_DASH_DOT_DOT':'MEDIUM_DASHED':'THIN':'NONE':''));
           Args.Arg(x).ERROR='Y';
           SndMsg(Args.Arg(x).Key:2003:1:Args.Arg(x).Value(y));
           LeaveSr;
@@ -3018,91 +2567,30 @@ Dcl-Proc #$XLSXStyle EXPORT;
     EndIf;
 
     If Args.Arg(x).Key='DIAGONALOPTION' and
-       Args.Arg(x).Value(1)<>'NONE' and
-       Args.Arg(x).Value(1)<>'BOTH' and
-       Args.Arg(x).Value(1)<>'DOWN' and
-       Args.Arg(x).Value(1)<>'UP';
+       not (Args.Arg(x).Value(1) in %list('NONE':'BOTH':'DOWN':'UP'));
       Args.Arg(x).ERROR='Y';
       SndMsg(Args.Arg(x).Key:2003:1:Args.Arg(x).Value(1));
       LeaveSr;
     EndIf;
 
     If Args.Arg(x).Key='WRAPTEXT' and
-       Args.Arg(x).Value(1)<>'ON' and
-       Args.Arg(x).Value(1)<>'OFF' and
-       Args.Arg(x).Value(1)<>'*ON' and
-       Args.Arg(x).Value(1)<>'*OFF' and
-       Args.Arg(x).Value(1)<>'FALSE' and
-       Args.Arg(x).Value(1)<>'FALSE' and
-       Args.Arg(x).Value(1)<>'1' and
-       Args.Arg(x).Value(1)<>'0' and
-       Args.Arg(x).Value(1)<>'Y' and
-       Args.Arg(x).Value(1)<>'N' and
-       Args.Arg(x).Value(1)<>'YES' and
-       Args.Arg(x).Value(1)<>'NO';
+       not (Args.Arg(x).Value(1) in %list('ON':'OFF':'*ON':'*OFF':'FALSE':'TRUE':
+                                          '1':'0':'Y':'N':'YES':'NO'));
       Args.Arg(x).ERROR='Y';
       SndMsg(Args.Arg(x).Key:2003:1:Args.Arg(x).Value(1));
       LeaveSr;
     EndIf;
 
     If Args.Arg(x).Key='FILLPATTERN' and
-       Args.Arg(x).Value(1)<>'NONE'                       and
-       Args.Arg(x).Value(1)<>'SOLID'                      and
-       Args.Arg(x).Value(1)<>'75%GRAY'                    and
-       Args.Arg(x).Value(1)<>'50%GRAY'                    and
-       Args.Arg(x).Value(1)<>'25%GRAY'                    and
-       Args.Arg(x).Value(1)<>'12.5%GRAY'                  and
-       Args.Arg(x).Value(1)<>'6.25%GRAY'                  and
-       Args.Arg(x).Value(1)<>'HORIZONTALSTRIPE'           and
-       Args.Arg(x).Value(1)<>'VERTICALSTRIPE'             and
-       Args.Arg(x).Value(1)<>'REVERSEDIAGONALSTRIPE'      and
-       Args.Arg(x).Value(1)<>'DIAGONALSTRIPE'             and
-       Args.Arg(x).Value(1)<>'DIAGONALCROSSHATCH'         and
-       Args.Arg(x).Value(1)<>'THICKDIAGONALCROSSHATCH'    and
-       Args.Arg(x).Value(1)<>'THINHORIZONTALSTRIPE'       and
-       Args.Arg(x).Value(1)<>'THINVERTICALSTRIPE'         and
-       Args.Arg(x).Value(1)<>'THINREVERSEDIAGONALSTRIPE'  and
-       Args.Arg(x).Value(1)<>'THINDIAGONALSTRIPE'         and
-       Args.Arg(x).Value(1)<>'THINCROSSHATCH'             and
-       Args.Arg(x).Value(1)<>'THINDIAGONALCROSSHATCH'     and
-       Args.Arg(x).Value(1)<>'SOLID'              and
-       Args.Arg(x).Value(1)<>'LIGHTGRAY'          and
-       Args.Arg(x).Value(1)<>'MEDIUMGRAY'         and
-       Args.Arg(x).Value(1)<>'DARKGRAY'           and
-       Args.Arg(x).Value(1)<>'GRAY125'            and
-       Args.Arg(x).Value(1)<>'GRAY0625'           and
-       Args.Arg(x).Value(1)<>'DARKHORIZONTAL'     and
-       Args.Arg(x).Value(1)<>'DARKVERTICAL'       and
-       Args.Arg(x).Value(1)<>'DARKDOWN'           and
-       Args.Arg(x).Value(1)<>'DARKUP'             and
-       Args.Arg(x).Value(1)<>'DARKGRID'           and
-       Args.Arg(x).Value(1)<>'DARKTRELLIS'        and
-       Args.Arg(x).Value(1)<>'LIGHTHORIZONTAL'    and
-       Args.Arg(x).Value(1)<>'LIGHTVERTICAL'      and
-       Args.Arg(x).Value(1)<>'LIGHTDOWN'          and
-       Args.Arg(x).Value(1)<>'LIGHTUP'            and
-       Args.Arg(x).Value(1)<>'LIGHTGRID'          and
-       Args.Arg(x).Value(1)<>'LIGHTTRELLIS'       and
-       Args.Arg(x).Value(1)<>'0'                  and
-       Args.Arg(x).Value(1)<>'1'                  and
-       Args.Arg(x).Value(1)<>'2'                  and
-       Args.Arg(x).Value(1)<>'3'                  and
-       Args.Arg(x).Value(1)<>'4'                  and
-       Args.Arg(x).Value(1)<>'5'                  and
-       Args.Arg(x).Value(1)<>'6'                  and
-       Args.Arg(x).Value(1)<>'7'                  and
-       Args.Arg(x).Value(1)<>'8'                  and
-       Args.Arg(x).Value(1)<>'9'                  and
-       Args.Arg(x).Value(1)<>'A'                  and
-       Args.Arg(x).Value(1)<>'B'                  and
-       Args.Arg(x).Value(1)<>'C'                  and
-       Args.Arg(x).Value(1)<>'D'                  and
-       Args.Arg(x).Value(1)<>'E'                  and
-       Args.Arg(x).Value(1)<>'F'                  and
-       Args.Arg(x).Value(1)<>'G'                  and
-       Args.Arg(x).Value(1)<>'H'                  and
-       Args.Arg(x).Value(1)<>'I'                  and
-       Args.Arg(x).ERROR='Y';
+       not (Args.Arg(x).Value(1) in %list('NONE':'SOLID':'75%GRAY''50%GRAY':'25%GRAY':'12.5%GRAY'
+       :'6.25%GRAY':'HORIZONTALSTRIPE':'VERTICALSTRIPE':'REVERSEDIAGONALSTRIPE':'DIAGONALSTRIPE'
+       :'DIAGONALCROSSHATCH':'THICKDIAGONALCROSSHATCH':'THINHORIZONTALSTRIPE':'THINVERTICALSTRIPE'
+       :'THINREVERSEDIAGONALSTRIPE':'THINDIAGONALSTRIPE':'THINCROSSHATCH':'THINDIAGONALCROSSHATCH'
+       :'SOLID':'LIGHTGRAY':'MEDIUMGRAY':'DARKGRAY':'GRAY125':'GRAY0625':'DARKHORIZONTAL'
+       :'DARKVERTICAL':'DARKDOWN':'DARKUP':'DARKGRID':'DARKTRELLIS':'LIGHTHORIZONTAL'
+       :'LIGHTVERTICAL':'LIGHTDOWN':'LIGHTUP':'LIGHTGRID':'LIGHTTRELLIS':'0':'1':'2':'3':'4':'5'
+       :'6':'7':'8':'9':'A':'B':'C':'D':'E':'F':'G':'H':'I'));
+      Args.Arg(x).ERROR='Y';
       SndMsg(Args.Arg(x).Key:2003:1:Args.Arg(x).Value(1));
       LeaveSr;
     EndIf;
@@ -3116,7 +2604,6 @@ Dcl-Proc #$XLSXStyle EXPORT;
     If Args.Arg(x).error='Y';
       LeaveSr;
     EndIf;
-
 
     // Set Values
     If Args.Arg(x).Key='NAME';
@@ -3133,8 +2620,7 @@ Dcl-Proc #$XLSXStyle EXPORT;
     EndIf;
 
     If Args.Arg(x).Key='POINTSIZE' and
-       RVL(Args.Arg(x).Value(1))>=1 and
-       RVL(Args.Arg(x).Value(1))<=409;
+       RVL(Args.Arg(x).Value(1))>=1 and RVL(Args.Arg(x).Value(1))<=409;
       Style.FontSize=RVL(Args.Arg(x).Value(1));
     EndIf;
 
@@ -3148,12 +2634,7 @@ Dcl-Proc #$XLSXStyle EXPORT;
     EndIf;
 
     If Args.Arg(x).Key='ITALIC';
-      If Args.Arg(x).Value(1)='*ON' or
-         Args.Arg(x).Value(1)='ON' or
-         Args.Arg(x).Value(1)='YES' or
-         Args.Arg(x).Value(1)='Y' or
-         Args.Arg(x).Value(1)='1' or
-         Args.Arg(x).value(1)='TRUE';
+      If Args.Arg(x).Value(1) in %list('*ON':'ON':'YES':'Y':'1':'TRUE');
         Style.Italic='Y';
       Else;
         Style.Italic=' ';
@@ -3161,12 +2642,7 @@ Dcl-Proc #$XLSXStyle EXPORT;
     EndIf;
 
     If Args.Arg(x).Key='STRIKEOUT';
-      If Args.Arg(x).Value(1)='*ON' or
-         Args.Arg(x).Value(1)='ON' or
-         Args.Arg(x).Value(1)='YES' or
-         Args.Arg(x).Value(1)='Y' or
-         Args.Arg(x).Value(1)='1' or
-         Args.Arg(x).value(1)='TRUE';
+      If Args.Arg(x).Value(1) in %list('*ON':'ON':'YES':'Y':'1':'TRUE');
         Style.StrikeOut='Y';
       Else;
         Style.StrikeOut=' ';
@@ -3174,14 +2650,9 @@ Dcl-Proc #$XLSXStyle EXPORT;
     EndIf;
 
     If Args.Arg(x).Key='TYPEOFFSET';
-      If Args.Arg(x).Value(1)='SUB' or
-             Args.Arg(x).Value(1)='SUBSCRIPT' or
-             Args.Arg(x).Value(1)='2';
+      If Args.Arg(x).Value(1) in %list('SUB':'SUBSCRIPT':'2');
         Style.TypeOffset='S';
-      ElseIf Args.Arg(x).Value(1)='SUP' or
-             Args.Arg(x).Value(1)='SUPER' or
-             Args.Arg(x).Value(1)='SUPERSCRIPT' or
-             Args.Arg(x).Value(1)='1';
+      ElseIf Args.Arg(x).Value(1) in %list('SUP':'SUPER':'SUPERSCRIPT':'1');
         Style.TypeOffset='P';
       Else;
         Style.TypeOffset=' ';
@@ -3189,8 +2660,7 @@ Dcl-Proc #$XLSXStyle EXPORT;
     EndIf;
 
     If Args.Arg(x).Key='UNDERLINE';
-      If Args.Arg(x).Value(1)='SINGLE' or
-         Args.Arg(x).Value(1)='YES';
+      If Args.Arg(x).Value(1)='SINGLE' or Args.Arg(x).Value(1)='YES';
         Style.Underline='1';
       ElseIf Args.Arg(x).Value(1)='DOUBLE';
         Style.Underline='2';
@@ -3887,9 +3357,8 @@ Dcl-Proc GetColor;
 
 End-Proc;
 
-// ------------------------------------------------------------------ *
+
 // Color2RBG - Convert color codes to a HEX RBG Value
-// ------------------------------------------------------------------ *
 Dcl-Proc Color2RBG;
   Dcl-Pi *n Char(6);
     Value Char(30) const;
@@ -3993,7 +3462,7 @@ Dcl-Proc Color2RBG;
     Return '000000';
   EndIf;
 
-  // of 8 character sent assume it is an RBG color stripoff the first 2
+  // if 8 character sent assume it is an RBG color stripoff the first 2
   If %Len(%Trim(Value))=8;
     Return %subst(%Trim(Value):3:6);
   EndIf;
@@ -4012,7 +3481,7 @@ Dcl-Proc ValStyle;
 
   // Check style array for this name
   For i=1 To WorkBook.StyleCount;
-    If WorkBook.Styles(i).Name=upify(psStyle);
+    If WorkBook.Styles(i).Name=%upper(psStyle);
       Return *off;
     EndIf;
   EndFor;
@@ -4030,7 +3499,7 @@ Dcl-Proc GetStyle;
 
   // Check style array for this name
   For i=1 To WorkBook.StyleCount;
-    If WorkBook.Styles(i).Name=upify(psStyle);
+    If WorkBook.Styles(i).Name=%upper(psStyle);
       Return %Trim(%Char(i));
     EndIf;
   EndFor;
@@ -4105,10 +3574,8 @@ Dcl-Proc CrtRels;
               .org/officeDocument/2006/relationships/officeDocument" +
                Target="xl/workbook.xml"/>'+eor);
   If WorkBook.CustomPCount>0;
-    writef(tab+'<Relationship Id="rId4" +
-            Type="http://schemas.openxmlformats.org/+
-            officeDocument/2006/relationships/custom-properties" +
-            Target="docProps/custom.xml"/>');
+    writef(tab+'<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/+
+            officeDocument/2006/relationships/custom-properties" Target="docProps/custom.xml"/>');
   EndIf;
   writef('</Relationships>');
   closef();
@@ -4119,13 +3586,11 @@ End-Proc;
 Dcl-Proc CrtDocPropsApp;
   openf(%Trim(WorkBook.TempFolder)+'docProps/app.xml');
   writef('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+eor);
-  writef('<Properties +
-          xmlns="http://schemas.openxmlformats.org/officeDocument/2006+
+  writef('<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006+
                 /extended-properties" +
          xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006+
                 /docPropsVTypes">'+eor);
-  writef(tab+'<Application>#$XLSX - RPGLE Excel Service Program+
-              </Application>'+eor);
+  writef(tab+'<Application>#$XLSX - RPGLE Excel Service Program</Application>'+eor);
 
   // Add heading pairs, these include all worksheets and defined names,
   // Defined names currently only come from repeating rows and columns
@@ -4211,24 +3676,19 @@ Dcl-Proc CrtDocPropsCore;
         xmlns:dcmitype="http://purl.org/dc/dcmitype/" +
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'+eor);
   If WorkBook.Title<>' ';
-    writef(tab+'<dc:title>'+%Trim(WorkBook.Title)+
-              '</dc:title>'+eor);
+    writef(tab+'<dc:title>' + %Trim(WorkBook.Title) + '</dc:title>'+eor);
   EndIf;
   If WorkBook.Subject<>' ';
-    writef(tab+'<dc:subject>'+%Trim(WorkBook.Subject)+
-              '</dc:subject>'+eor);
+    writef(tab+'<dc:subject>' + %Trim(WorkBook.Subject) + '</dc:subject>'+eor);
   EndIf;
   If WorkBook.Creator<>' ';
-    writef(tab+'<dc:creator>'+%Trim(WorkBook.Creator)+
-              '</dc:creator>'+eor);
+    writef(tab+'<dc:creator>' + %Trim(WorkBook.Creator) + '</dc:creator>'+eor);
   EndIf;
   If WorkBook.Tags<>' ';
-    writef(tab+'<cp:keywords>'+%Trim(WorkBook.Tags)+
-              '</cp:keywords>'+eor);
+    writef(tab+'<cp:keywords>' + %Trim(WorkBook.Tags) + '</cp:keywords>'+eor);
   EndIf;
   If WorkBook.Comments<>' ';
-    writef(tab+'<dc:description>'+%Trim(WorkBook.Comments)+
-               '</dc:description>'+eor);
+    writef(tab+'<dc:description>' + %Trim(WorkBook.Comments) + '</dc:description>'+eor);
   EndIf;
   // Get the current system time in the format of:2020-02-14T13:48:45Z
   writef(tab+'<dcterms:created xsi:type="dcterms:W3CDTF">'+
@@ -4236,12 +3696,10 @@ Dcl-Proc CrtDocPropsCore;
             %EditW(%Dec(%time():*iso):'  :  :  ') + 'Z' +
            '</dcterms:created>'+eor);
   If WorkBook.Category<>' ';
-    writef(tab+'<cp:category>'+%Trim(WorkBook.Category)+
-              '</cp:category>'+eor);
+    writef(tab+'<cp:category>' + %Trim(WorkBook.Category) + '</cp:category>'+eor);
   EndIf;
   If WorkBook.ContentStatus<>' ';
-    writef(tab+'<cp:contentStatus>'+%Trim(WorkBook.ContentStatus)+
-              '</cp:contentStatus>'+eor);
+    writef(tab+'<cp:contentStatus>' + %Trim(WorkBook.ContentStatus) + '</cp:contentStatus>'+eor);
   EndIf;
   writef('</cp:coreProperties>');
   closef();
@@ -4254,11 +3712,9 @@ Dcl-Proc CrtDocPropsCustom;
 
   openf(%Trim(WorkBook.TempFolder)+'docProps/custom.xml');
   writef('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+eor);
-  writef('<Properties +
-          xmlns="http://schemas.openxmlformats.org/officeDocument/+
+  writef('<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/+
                  2006/custom-properties" +
-          xmlns:vt="http://schemas.openxmlformats.org/officeDocument/+
-                 2006/docPropsVTypes">'+eor);
+          xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">'+eor);
 
   For i = 1 To WorkBook.CustomPCount;
     writef(tab+'<property +
@@ -4266,27 +3722,18 @@ Dcl-Proc CrtDocPropsCustom;
           pid="'+%Char(i+1)+'" +
           name="'+%Trim(WorkBook.CustomProperties(i).Name)+'">'+eor);
     If WorkBook.CustomProperties(i).Type='1';
-      writef(tab+tab+'<vt:lpwstr>'+
-                      %Trim(WorkBook.CustomProperties(i).Value)+
-                      '</vt:lpwstr>'+eor);
+      writef(tab+tab+'<vt:lpwstr>'+ %Trim(WorkBook.CustomProperties(i).Value)+ '</vt:lpwstr>'+eor);
     EndIf;
     If WorkBook.CustomProperties(i).Type='2';
-      writef(tab+tab+'<vt:filetime>'+
-             %EditW(
-                    %Dec(WorkBook.CustomProperties(i).Value:8:0)
-                    :'    -  -  ')+
-             'T10:00:00Z'+
-             '</vt:filetime>'+eor);
+      writef(tab+tab+'<vt:filetime>' +
+             %EditW(%Dec(WorkBook.CustomProperties(i).Value:8:0):'    -  -  ') +
+             'T10:00:00Z</vt:filetime>'+eor);
     EndIf;
     If WorkBook.CustomProperties(i).Type='3';
-      writef(tab+tab+'<vt:r8>'+
-                      %Trim(WorkBook.CustomProperties(i).Value)+
-                      '</vt:r8>'+eor);
+      writef(tab+tab+'<vt:r8>' + %Trim(WorkBook.CustomProperties(i).Value) + '</vt:r8>'+eor);
     EndIf;
     If WorkBook.CustomProperties(i).Type='4';
-      writef(tab+tab+'<vt:bool>'+
-                      %Trim(WorkBook.CustomProperties(i).Value)+
-                      '</vt:bool>'+eor);
+      writef(tab+tab+'<vt:bool>' + %Trim(WorkBook.CustomProperties(i).Value) + '</vt:bool>'+eor);
     EndIf;
     writef(tab+'</property>'+eor);
   EndFor;
@@ -4302,25 +3749,18 @@ Dcl-Proc CrtWorkbook;
   openf(%Trim(WorkBook.TempFolder)+'xl/workbook.xml');
   writef('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+eor);
   writef('<workbook +
-          xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/+
-                 main" +
-          xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/+
-                   relationships" +
-          xmlns:mc="http://schemas.openxmlformats.org/+
-                    markup-compatibility/2006" +
+          xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" +
+          xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" +
+          xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" +
           mc:Ignorable="x15" +
-          xmlns:x15="http://schemas.microsoft.com/office/spreadsheetml/+
-                     2010/11/main">'+eor);
-  writef(tab+'<fileVersion appName="xl" lastEdited="6" lowestEdited="6" +
-                rupBuild="14420"/>'+eor);
+          xmlns:x15="http://schemas.microsoft.com/office/spreadsheetml/2010/11/main">'+eor);
+  writef(tab+'<fileVersion appName="xl" lastEdited="6" lowestEdited="6" rupBuild="14420"/>'+eor);
   writef(tab+'<workbookPr defaultThemeVersion="164011"/>'+eor);
-  writef(tab+'<mc:AlternateContent +
-               xmlns:mc="http://schemas.openxmlformats.org/+
+  writef(tab+'<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/+
                markup-compatibility/2006">'+eor);
   writef(tab+tab+'<mc:Choice Requires="x15">'+eor);
   writef(tab+tab+tab+'<x15ac:absPath url="C:\Users\ttognazzin\Desktop\" +
-              xmlns:x15ac="http://schemas.microsoft.com/office/+
-              spreadsheetml/2010/11/ac"/>'+eor);
+              xmlns:x15ac="http://schemas.microsoft.com/office/spreadsheetml/2010/11/ac"/>'+eor);
   writef(tab+tab+'</mc:Choice>'+eor);
   writef(tab+'</mc:AlternateContent>'+eor);
   writef(tab+'<bookViews>'+eor);
@@ -4341,8 +3781,7 @@ Dcl-Proc CrtWorkbook;
   If Workbook.Repeating;
     writef(tab+'<definedNames>'+eor);
     For i = 1 To Workbook.SheetCount;
-      If Workbook.RepeatingColumns(i)<>0 or
-         Workbook.RepeatingRows(i)<>0;
+      If Workbook.RepeatingColumns(i)<>0 or Workbook.RepeatingRows(i)<>0;
         Workbook.NamedRanges+=1;
         WorkBook.NamedRange(Workbook.NamedRanges)=
                   %Trim(Workbook.Sheets(i)) + '!Print_Titles';
@@ -4418,10 +3857,8 @@ Dcl-Proc CrtStyles;
   openf(%Trim(WorkBook.TempFolder)+'xl/styles.xml');
   writef('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+eor);
   writef('<styleSheet +
-           xmlns="http://schemas.openxmlformats.org/spreadsheetml/+
-                  2006/main" +
-           xmlns:mc="http://schemas.openxmlformats.org/+
-                     markup-compatibility/2006">'+eor);
+           xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" +
+           xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">'+eor);
 
   // Get count of styles that have number formats, fonts, fills and borders
   numFmtCnt=0;
@@ -4535,8 +3972,7 @@ Dcl-Proc CrtStyles;
   EndFor;
   writef(tab+'</fonts>'+eor);
 
-  // Add fills
-  // for some reason we have to put defaults in for 1 and 2.
+  // Add fills, for some reason we have to put defaults in for 1 and 2.
   writef(tab+'<fills count="'+%Char(fillCnt+2)+'">'+eor);
   writef(tab+tab+'<fill>'+eor);
   writef(tab+tab+tab+'<patternFill patternType="none"/>'+eor);
@@ -4553,68 +3989,47 @@ Dcl-Proc CrtStyles;
       writef(tab+tab+tab+'<patternFill');
       If WorkBook.Styles(i).FillStyle='1';
         writef(' patternType="solid"');
-      EndIf;
-      If WorkBook.Styles(i).FillStyle='2';
+      ElseIf WorkBook.Styles(i).FillStyle='2';
         writef(' patternType="lightGray"');
-      EndIf;
-      If WorkBook.Styles(i).FillStyle='3';
+      ElseIf WorkBook.Styles(i).FillStyle='3';
         writef(' patternType="mediumGray"');
-      EndIf;
-      If WorkBook.Styles(i).FillStyle='4';
+      ElseIf WorkBook.Styles(i).FillStyle='4';
         writef(' patternType="darkGray"');
-      EndIf;
-      If WorkBook.Styles(i).FillStyle='5';
+      ElseIf WorkBook.Styles(i).FillStyle='5';
         writef(' patternType="gray125"');
-      EndIf;
-      If WorkBook.Styles(i).FillStyle='6';
+      ElseIf WorkBook.Styles(i).FillStyle='6';
         writef(' patternType="gray0625"');
-      EndIf;
-      If WorkBook.Styles(i).FillStyle='7';
+      ElseIf WorkBook.Styles(i).FillStyle='7';
         writef(' patternType="darkHorizontal"');
-      EndIf;
-      If WorkBook.Styles(i).FillStyle='8';
+      ElseIf WorkBook.Styles(i).FillStyle='8';
         writef(' patternType="darkVertical"');
-      EndIf;
-      If WorkBook.Styles(i).FillStyle='9';
+      ElseIf WorkBook.Styles(i).FillStyle='9';
         writef(' patternType="darkDown"');
-      EndIf;
-      If WorkBook.Styles(i).FillStyle='A';
+      ElseIf WorkBook.Styles(i).FillStyle='A';
         writef(' patternType="darkUp"');
-      EndIf;
-      If WorkBook.Styles(i).FillStyle='B';
+      ElseIf WorkBook.Styles(i).FillStyle='B';
         writef(' patternType="darkGrid"');
-      EndIf;
-      If WorkBook.Styles(i).FillStyle='C';
+      ElseIf WorkBook.Styles(i).FillStyle='C';
         writef(' patternType="darkTrellis"');
-      EndIf;
-      If WorkBook.Styles(i).FillStyle='D';
+      ElseIf WorkBook.Styles(i).FillStyle='D';
         writef(' patternType="lightHorizontal"');
-      EndIf;
-      If WorkBook.Styles(i).FillStyle='E';
+      ElseIf WorkBook.Styles(i).FillStyle='E';
         writef(' patternType="lightVertical"');
-      EndIf;
-      If WorkBook.Styles(i).FillStyle='F';
+      ElseIf WorkBook.Styles(i).FillStyle='F';
         writef(' patternType="lightDown"');
-      EndIf;
-      If WorkBook.Styles(i).FillStyle='G';
+      ElseIf WorkBook.Styles(i).FillStyle='G';
         writef(' patternType="lightUp"');
-      EndIf;
-      If WorkBook.Styles(i).FillStyle='H';
+      ElseIf WorkBook.Styles(i).FillStyle='H';
         writef(' patternType="lightGrid"');
-      EndIf;
-      If WorkBook.Styles(i).FillStyle='I';
+      ElseIf WorkBook.Styles(i).FillStyle='I';
         writef(' patternType="lightTrellis"');
       EndIf;
       writef('>'+eor);
       If WorkBook.Styles(i).FillForeground<>' ';
-        writef(tab+tab+tab+tab+'<fgColor ' +
-               rtnColor(WorkBook.Styles(i).FillForeground) +
-               '/>'+eor);
+        writef(tab+tab+tab+tab+'<fgColor ' + rtnColor(WorkBook.Styles(i).FillForeground)+'/>'+eor);
       EndIf;
       If WorkBook.Styles(i).FillBackground<>' ';
-        writef(tab+tab+tab+tab+'<bgColor ' +
-               rtnColor(WorkBook.Styles(i).FillBackground) +
-               '/>'+eor);
+        writef(tab+tab+tab+tab+'<bgColor ' + rtnColor(WorkBook.Styles(i).FillBackground)+'/>'+eor);
       EndIf;
       counter+=1;
       WorkBook.Styles(i).Fill=counter+1;
@@ -4654,65 +4069,45 @@ Dcl-Proc CrtStyles;
       EndIf;
       writef('>'+eor);
       If WorkBook.Styles(i).leftBorder<>' ';
-        writef(tab+tab+tab+'<Left '+
-               rtnBorderStyle(WorkBook.Styles(i).leftBorder) +
-               '>'+eor);
+        writef(tab+tab+tab+'<left '+ rtnBorderStyle(WorkBook.Styles(i ).leftBorder) +'>'+eor);
         If WorkBook.Styles(i).BorderColor<>' ';
-          writef(tab+tab+tab+tab+'<color '+
-                 rtnColor(WorkBook.Styles(i).BorderColor) +
-                 '/>'+eor);
+          writef(tab+tab+tab+tab+'<color '+ rtnColor(WorkBook.Styles(i).BorderColor) + '/>'+eor);
         EndIf;
         writef(tab+tab+tab+'</left>'+eor);
       Else;
         writef(tab+tab+tab+'<left/>'+eor);
       EndIf;
       If WorkBook.Styles(i).rightBorder<>' ';
-        writef(tab+tab+tab+'<right '+
-               rtnBorderStyle(WorkBook.Styles(i).rightBorder) +
-               '>'+eor);
+        writef(tab+tab+tab+'<right '+ rtnBorderStyle(WorkBook.Styles(i).rightBorder) + '>'+eor);
         If WorkBook.Styles(i).BorderColor<>' ';
-          writef(tab+tab+tab+tab+'<color '+
-                 rtnColor(WorkBook.Styles(i).BorderColor) +
-                 '/>'+eor);
+          writef(tab+tab+tab+tab+'<color '+ rtnColor(WorkBook.Styles(i).BorderColor) + '/>'+eor);
         EndIf;
         writef(tab+tab+tab+'</right>'+eor);
       Else;
         writef(tab+tab+tab+'<right/>'+eor);
       EndIf;
       If WorkBook.Styles(i).topBorder<>' ';
-        writef(tab+tab+tab+'<top '+
-               rtnBorderStyle(WorkBook.Styles(i).topBorder) +
-               '>'+eor);
+        writef(tab+tab+tab+'<top '+ rtnBorderStyle(WorkBook.Styles(i).topBorder) + '>'+eor);
         If WorkBook.Styles(i).BorderColor<>' ';
-          writef(tab+tab+tab+tab+'<color '+
-                 rtnColor(WorkBook.Styles(i).BorderColor) +
-                 '/>'+eor);
+          writef(tab+tab+tab+tab+'<color '+ rtnColor(WorkBook.Styles(i).BorderColor) + '/>'+eor);
         EndIf;
         writef(tab+tab+tab+'</top>'+eor);
       Else;
         writef(tab+tab+tab+'<top/>'+eor);
       EndIf;
       If WorkBook.Styles(i).bottomBorder<>' ';
-        writef(tab+tab+tab+'<bottom '+
-               rtnBorderStyle(WorkBook.Styles(i).bottomBorder) +
-               '>'+eor);
+        writef(tab+tab+tab+'<bottom '+ rtnBorderStyle(WorkBook.Styles(i).bottomBorder) + '>'+eor);
         If WorkBook.Styles(i).BorderColor<>' ';
-          writef(tab+tab+tab+tab+'<color '+
-                 rtnColor(WorkBook.Styles(i).BorderColor) +
-                 '/>'+eor);
+          writef(tab+tab+tab+tab+'<color '+ rtnColor(WorkBook.Styles(i).BorderColor) + '/>'+eor);
         EndIf;
         writef(tab+tab+tab+'</bottom>'+eor);
       Else;
         writef(tab+tab+tab+'<bottom/>'+eor);
       EndIf;
       If WorkBook.Styles(i).diagonalBorder<>' ';
-        writef(tab+tab+tab+'<diagonal '+
-               rtnBorderStyle(WorkBook.Styles(i).diagonalBorder) +
-               '>'+eor);
+        writef(tab+tab+tab+'<diagonal '+rtnBorderStyle(WorkBook.Styles(i).diagonalBorder)+'>'+eor);
         If WorkBook.Styles(i).BorderColor<>' ';
-          writef(tab+tab+tab+tab+'<color '+
-                 rtnBorderStyle(WorkBook.Styles(i).BorderColor) +
-                 '/>'+eor);
+          writef(tab+tab+tab+tab+'<color '+rtnBorderStyle(WorkBook.Styles(i).BorderColor)+'/>'+eor);
         EndIf;
         writef(tab+tab+tab+'</diagonal>'+eor);
       Else;
@@ -4726,14 +4121,12 @@ Dcl-Proc CrtStyles;
   writef(tab+'</borders>'+eor);
 
   writef(tab+'<cellStyleXfs count="1">'+eor);
-  writef(tab+tab+'<xf numFmtId="0" fontId="0" +
-                      fillId="0" borderId="0"/>'+eor);
+  writef(tab+tab+'<xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>'+eor);
   writef(tab+'</cellStyleXfs>'+eor);
 
   // Add Xfs - Crossreference of style to Fumfnt,font,fill and border
   writef(tab+'<cellXfs count="'+%Char(WorkBook.StyleCount+1)+'">'+eor);
-  writef(tab+tab+'<xf numFmtId="0" fontId="0" fillId="0" +
-                      borderId="0" xfId="0"/>'+eor);
+  writef(tab+tab+'<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'+eor);
   For i = 1 To WorkBook.StyleCount;
     writef(tab+tab+'<xf ');
     If WorkBook.Styles(i).NumFmt<>0;
@@ -4801,29 +4194,22 @@ Dcl-Proc CrtStyles;
   EndFor;
   writef(tab+'</cellXfs>'+eor);
 
-
   writef(tab+'<cellStyles count="1">'+eor);
-  writef(tab+tab+'<cellStyle name="Normal" xfId="0" +
-                             builtinId="0"/>'+eor);
+  writef(tab+tab+'<cellStyle name="Normal" xfId="0" builtinId="0"/>'+eor);
   writef(tab+'</cellStyles>'+eor);
 
   writef(tab+'<dxfs count="0"/>'+eor);
 
-  writef(tab+'<tableStyles count="0" +
-               defaultTableStyle="TableStyleMedium2" +
+  writef(tab+'<tableStyles count="0" defaultTableStyle="TableStyleMedium2" +
                defaultPivotStyle="PivotStyleLight16"/>'+eor);
   writef(tab+'<extLst>'+eor);
   writef(tab+tab+'<ext uri="{EB79DEF2-80B8-43e5-95BD-54CBDDF9020C}" +
-               xmlns:x14="http://schemas.microsoft.com/office/+
-                    spreadsheetml/2009/9/main">'+eor);
-  writef(tab+tab+tab+'<x14:slicerStyles +
-               defaultSlicerStyle="SlicerStyleLight1"/>'+eor);
+               xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main">'+eor);
+  writef(tab+tab+tab+'<x14:slicerStyles defaultSlicerStyle="SlicerStyleLight1"/>'+eor);
   writef(tab+tab+'</ext>'+eor);
   writef(tab+tab+'<ext uri="{9260A510-F301-46a8-8635-F512D64BE5F5}" +
-               xmlns:x15="http://schemas.microsoft.com/+
-               office/spreadsheetml/2010/11/main">'+eor);
-  writef(tab+tab+tab+'<x15:timelineStyles +
-               defaultTimelineStyle="TimeSlicerStyleLight1"/>'+eor);
+               xmlns:x15="http://schemas.microsoft.com/office/spreadsheetml/2010/11/main">'+eor);
+  writef(tab+tab+tab+'<x15:timelineStyles defaultTimelineStyle="TimeSlicerStyleLight1"/>'+eor);
   writef(tab+tab+'</ext>'+eor);
   writef(tab+'</extLst>'+eor);
   writef('</styleSheet>');
@@ -4838,13 +4224,10 @@ Dcl-Proc CrtContents;
   openf(%Trim(WorkBook.TempFolder)+'[content_Types].xml');
   writef('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+eor);
   writef('<Types +
-           xmlns="http://schemas.openxmlformats.org/package/+
-                  2006/content-types">'+eor);
+           xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+eor);
   writef(tab+'<Default Extension="rels" +
-               ContentType="application/vnd.openxmlformats+
-                  -package.relationships+xml"/>'+eor);
-  writef(tab+'<Default Extension="xml" +
-               ContentType="application/xml"/>'+eor);
+               ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'+eor);
+  writef(tab+'<Default Extension="xml" ContentType="application/xml"/>'+eor);
   writef(tab+'<Override PartName="/xl/workbook.xml" +
            ContentType="application/vnd.openxmlformats-officedocument+
            .spreadsheetml.sheet.main+xml"/>'+eor);
@@ -4962,8 +4345,7 @@ Dcl-Proc WRITEF;
     data Varchar(32000) Value;
   End-Pi;
 
-  // Write data to memory or file based on buffering option, data
-  // length and buffer size
+  // Write data to memory or file based on buffering option, data length and buffer size
   If  WorkBook.Buffering;
     If %Len(data)>=%Len(buffer:*max)-1;
       // write buffered data, then reset the buffer, then add data to buffer
@@ -4998,41 +4380,12 @@ Dcl-Proc CLOSEF;
   EndIf;
 End-Proc;
 
-// upify - Convert to all upper case
-// Only converts english characters.
-//        INPUT:  data = Field to convert to all capitals
-//      RETURNS:  The data field in all capitals
-Dcl-Proc upify;
-  Dcl-Pi *n Varchar(32767);
-    data  Varchar(32767) const;
-  End-Pi;
-  Dcl-C EngLow 'abcdefghijklmnopqrstuvwxyz';
-  Dcl-C EngUp 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
-  Return %xlate(EngLow:EngUp:data);
-
-End-Proc;
-
-
-// lowfy - Convert to all lower case
-// Only converts english characters.
-//       INPUT:  data = Field to convert to all capitals
-//     RETURNS:  The data field in all capitals
-Dcl-Proc lowfy;
-  Dcl-Pi *n Varchar(32767);
-    data Varchar(32767) const;
-  End-Pi;
-  Dcl-C EngLow 'abcdefghijklmnopqrstuvwxyz';
-  Dcl-C EngUp 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  Return %xlate(EngUp:EngLow:data);
-End-Proc;
-
 
 // rvl - returns a number from a character string
-
+//
 //  INPUT:  #$TXET = Input string
 //  RETURNS:  Numeric Value
-
+//
 //  examples
 //  rvl('1')                     returns 1
 //  rvl('-1')                    returns -1
@@ -5096,7 +4449,7 @@ Dcl-Proc RVL;
   EndFor;
 
   // right justify n20 to n21
-  z = 0;
+  z = 21;
   For x = 1 To 20;
     y =   21 - X;
     If N20(Y) <> *BLANKS;
@@ -5125,14 +4478,13 @@ End-Proc;
 
 
 // last - returns the last characters from a string
-
+//
 //  Input: #$STRING = The character string.
 //         #$CHARS  = The number of characters to return
 //  Output: the characters from the string
-
+//
 //  Examples
 //   LAST('/tog/test.pdf':4) = '.pdf'
-
 Dcl-Proc LAST;
   Dcl-Pi *n Varchar(99);
     #$STRING Varchar(2048) CONST;
@@ -5164,7 +4516,7 @@ End-Proc;
 //   Input: Col = the Column
 //          Row = the row
 //   Output: the character version of column and row
-
+//
 //   Examples
 //    ColRow(1:3) = A3
 //    ColRow(27:1387) = AA1387
@@ -5195,9 +4547,7 @@ End-Proc;
 
 
 // Col - Returns the character Value of column
-
-//  Examples
-//   Col(1) = A  Col(2) = B  Col(27) = AA
+//  Examples:  Col(1) = A  Col(2) = B  Col(27) = AA
 Dcl-Proc Col;
   Dcl-Pi *n Varchar(3);
     Col packed(5) CONST;
@@ -5221,7 +4571,6 @@ End-Proc;
 
 
 // Col2 - Returns the numeric value of a character column
-
 //  Examples: Col2('A') = 1  Col2('B') = 2  Col2('AA') = 27
 Dcl-Proc Col2;
   Dcl-Pi *n packed(5);
@@ -5259,21 +4608,6 @@ Dcl-Proc Col2;
   // return the result
   Return Result;
 
-End-Proc;
-
-
-// cmd - run a command
-Dcl-Proc CMD;
-  Dcl-Pi *n;
-    #$Cmd Varchar(32768) const;
-  End-Pi;
-  Dcl-S #$LEN packed(15: 5);
-  // prototype for qcmdexc
-  Dcl-Pr RunCmd extpgm('QCMDEXC');
-    *n Char(32768) const; // command
-    *n packed(15: 5) const; // length
-  End-Pr;
-  RunCmd(%Trim(#$Cmd):%Len(%Trim(#$Cmd)));
 End-Proc;
 
 
@@ -5410,7 +4744,6 @@ End-Proc;
 
 // ExcDate
 // Convert date data type field to Excel number date.
-
 //  INPUT:  Date in a date data type field
 // RETURN:  Excels numeric representation of a date.
 Dcl-Proc ExcDate;
@@ -5424,14 +4757,8 @@ End-Proc;
 
 
 // XMLESC - Escapes special characters in a string for XML
-// This procedure replaces special characters for an XML
-// output field
-//     & to &#38;       < to &#60;    > to &#62;
-//     ' to &#39,       " to &#34;
-
-//        INPUT:  #$IN = String in
-//      RETURNS:  Fixed String
-
+// This procedure replaces special characters for an XML output field
+//    & to &#38;       < to &#60;    > to &#62;  ' to &#39;       " to &#34;
 // Example #$XMLESC('<DATA>')='&#60;DATA&#62;'
 Dcl-Proc XMLESC;
   Dcl-Pi *n Varchar(4096);
@@ -5450,12 +4777,9 @@ End-Proc;
 
 
 // Vdat - validates a text date
-// This checks a text field for a valid numeric date in
-// YYYYMMDD format.
-
+// This checks a text field for a valid numeric date in YYYYMMDD format.
 //        INPUT:  #$IN = String in
 //      RETURNS:  Boolean, on for error, otherwise off
-
 // Example vdat('20200101')=*Off
 //         vdat('20201301')=*On
 Dcl-Proc vdat;
@@ -5481,14 +4805,8 @@ Dcl-Proc vdat;
 End-Proc;
 
 
-// VNum - validates a text number
-// This checks a text field for a valid numer.
-
-//        INPUT:  #$IN = String in
-//      RETURNS:  Boolean, on for error, otherwise off
-
-// Example vnum('a123')=*On
-//         vnum('123')=*Off
+// VNum - This checks a text field for a valid numer.
+// Example vnum('a123')=*On, vnum('123')=*Off
 Dcl-Proc VNum;
   Dcl-Pi *n Ind;
     #$IN Varchar(2048) const;
@@ -5529,7 +4847,7 @@ Dcl-Proc SplitArg;
   EndIf;
 
   // Split argument into a Key and the remaining text
-  arg.Key=upify(%subst(tpArg:1:x-1));
+  arg.Key=%upper(%subst(tpArg:1:x-1));
   tpArg=%subst(tpArg:x+1:%Len(tpArg)-x);
 
   // if nothing is after the first semicolon, save key leave
@@ -5541,8 +4859,7 @@ Dcl-Proc SplitArg;
 
   // Try to split up to 20 values out of the remaining text
   DoW 1=1;
-    // Find the first semicolon, if quotes don't start till after
-    // the closing quote
+    // Find the first semicolon, if quotes don't start till after the closing quote
     If %subst(tparg:1:1)='"';
       // todo figure out quote logic later, has to handle double quotes
       x=%Scan(':':tpArg);
@@ -5572,30 +4889,15 @@ Dcl-Proc SplitArg;
   EndDo;
 
   // Uppercase all but specific values
-  If arg.key<>'OUTPUTNAME' and           // #$XLSXOpen options
-     arg.key<>'AUTHOR' and
-     arg.key<>'COMPANY' and
-     arg.key<>'TITLE' and
-     arg.key<>'SUBJECT' and
-     arg.key<>'MANAGER' and
-     arg.key<>'CATEGORY' and
-     arg.key<>'STATUS' and
-     arg.key<>'COMMENTS' and
-     arg.key<>'HYPERLINKBASE' and
-     arg.key<>'CUSTOMPROPERTY' and
-     arg.key<>'FONT' and                 // #$XLSXStyle Options
-     arg.key<>'DATAFORMAT' and
-     arg.key<>'SHEETNAME' and            // #$XLSXWkSh Options
-     arg.key<>'HEADER' and
-     arg.key<>'FOOTER' and
-     arg.key<>'PAPERSIZE' and
-     arg.key<>'PRINTQUALITY';
+  If not (arg.key in %list('OUTPUTNAME':'AUTHOR':'COMPANY':'TITLE':'SUBJECT':'MANAGER':'CATEGORY'
+     :'STATUS':'COMMENTS':'HYPERLINKBASE':'CUSTOMPROPERTY''FONT':'DATAFORMAT''SHEETNAME':'HEADER'
+     :'FOOTER':'PAPERSIZE':'PRINTQUALITY'));
     For x=1 To arg.values;
-      arg.value(X)=upify(arg.value(x));
+      arg.value(X)=%upper(arg.value(x));
     EndFor;
   Else;
     For x=2 To arg.values;
-      arg.value(X)=upify(arg.value(x));
+      arg.value(X)=%upper(arg.value(x));
     EndFor;
   EndIf;
 
@@ -5668,17 +4970,14 @@ Dcl-Proc AddHeader;
     writef('&amp;K'+Color2RBG(hdr.color));
   EndIf;
 
-  If hdr.Font<>' ' or
-     hdr.Italic or
-     hdr.Bold;
+  If hdr.Font<>' ' or hdr.Italic or hdr.Bold;
     writef('&amp;"');
     If hdr.Font<>' ';
       writef(%Trim(hdr.Font)+',');
     Else;
       writef('-,');
     EndIf;
-    If hdr.Bold and
-       hdr.Italic;
+    If hdr.Bold and hdr.Italic;
       writef('Bold Italic');
     ElseIf hdr.Bold;
       writef('Bold');

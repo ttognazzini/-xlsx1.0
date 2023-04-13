@@ -1,37 +1,37 @@
      H NOMAIN OPTION(*SRCSTMT) BNDDIR('#$XLSX1.0/ZLIB')
-     Â‚*****************************************************************
-     Â‚*Â€Create a zip file from RPGLE program                         Â‚*
-     Â‚*****************************************************************
-     Â‚*Â€                                                             Â‚*
-     Â‚*Â€Only one Zip file can be in use at a time, this is because   Â‚*
-     Â‚*Â€the service program holds the keys to the open file so the   Â‚*
-     Â‚*Â€RPG developer does not have to mess with it.                 Â‚*
-     Â‚*Â€                                                             Â‚*
-     Â‚*Â€Exported function list                                       Â‚*
-     Â‚*Â€  #$ZipOpen  - Open/create a zip file                        Â‚*
-     Â‚*Â€  #$ZipFile  - Add file inside a zip file                    Â‚*
-     Â‚*Â€  #$ZipWrite - Write data into a file inside a zip file      Â‚*
-     Â‚*Â€  #$ZipWriteB - Same as write but for a buffer               Â‚*
-     Â‚*Â€  #$ZipClose - Close an open zip file                        Â‚*
-     Â‚*Â€                                                             Â‚*
-     Â‚*Â€Internal function list                                       Â‚*
-     Â‚*Â€  SndMsg     - Send Program Message                          Â‚*
-     Â‚*Â€                                                             Â‚*
-     Â‚*Â€Errors are sent using message file ZLIB/#$ZIPMSG             Â‚*
-     Â‚*Â€CLLE program #$ZIPMSG contains the code to generate the      Â‚*
-     Â‚*Â€message file.                                                Â‚*
-     Â‚*Â€                                                             Â‚*
-     Â‚*****************************************************************
-     Â‚*Â€                                                             Â‚*
-     Â‚*Â€To create this program use the following commands, if you    Â‚*
-     Â‚*Â€installed the system using a different library change the    Â‚*
-     Â‚*Â€libraries as needed.                                         Â‚*
-     Â‚*Â€CRTRPGMOD  MODULE(#$XLSX1.0/#$ZIP)                           Â‚*
-     Â‚*Â€           SRCFILE(#$XLSX1.0/QRPGLESRC) DBGVIEW(*ALL)        Â‚*
-     Â‚*Â€CRTSRVPGM  SRVPGM(#$XLSX1.0/#$ZIP) MODULE(#$XLSX1.0/#$ZIP)   Â‚*
-     Â‚*Â€           TEXT('Create Zip Files') EXPORT(*SRCFILE)         Â‚*
-     Â‚*Â€                                                             Â‚*
-     Â‚*****************************************************************
+     ‚*****************************************************************
+     ‚*€Create a zip file from RPGLE program                         ‚*
+     ‚*****************************************************************
+     ‚*€                                                             ‚*
+     ‚*€Only one Zip file can be in use at a time, this is because   ‚*
+     ‚*€the service program holds the keys to the open file so the   ‚*
+     ‚*€RPG developer does not have to mess with it.                 ‚*
+     ‚*€                                                             ‚*
+     ‚*€Exported function list                                       ‚*
+     ‚*€  #$ZipOpen  - Open/create a zip file                        ‚*
+     ‚*€  #$ZipFile  - Add file inside a zip file                    ‚*
+     ‚*€  #$ZipWrite - Write data into a file inside a zip file      ‚*
+     ‚*€  #$ZipWriteB - Same as write but for a buffer               ‚*
+     ‚*€  #$ZipClose - Close an open zip file                        ‚*
+     ‚*€                                                             ‚*
+     ‚*€Internal function list                                       ‚*
+     ‚*€  SndMsg     - Send Program Message                          ‚*
+     ‚*€                                                             ‚*
+     ‚*€Errors are sent using message file ZLIB/#$ZIPMSG             ‚*
+     ‚*€CLLE program #$ZIPMSG contains the code to generate the      ‚*
+     ‚*€message file.                                                ‚*
+     ‚*€                                                             ‚*
+     ‚*****************************************************************
+     ‚*€                                                             ‚*
+     ‚*€To create this program use the following commands, if you    ‚*
+     ‚*€installed the system using a different library change the    ‚*
+     ‚*€libraries as needed.                                         ‚*
+     ‚*€CRTRPGMOD  MODULE(#$XLSX1.0/#$ZIP)                           ‚*
+     ‚*€           SRCFILE(#$XLSX1.0/QRPGLESRC) DBGVIEW(*ALL)        ‚*
+     ‚*€CRTSRVPGM  SRVPGM(#$XLSX1.0/#$ZIP) MODULE(#$XLSX1.0/#$ZIP)   ‚*
+     ‚*€           TEXT('Create Zip Files') EXPORT(*SRCFILE)         ‚*
+     ‚*€                                                             ‚*
+     ‚*****************************************************************
      D/INCLUDE #$XLSX1.0/QRPGLESRC,ZIP.INC
      D/INCLUDE #$XLSX1.0/QRPGLESRC,ZLIB.INC
      D/INCLUDE #$ZIP_H
@@ -308,7 +308,7 @@
         rc=iconv( toEBC : p_input : inputleft : p_output : outputleft );
 
         // the output buffer is twice the size of the input buffer because
-        // some characters require 2 bytes, for example Ã‰ gets converted
+        // some characters require 2 bytes, for example É gets converted
         // to x'C389', however we only want to write out the actual size
         // of the converted data which will equal the intial size minus
         // the outputLeft, output left is the number of bytes that did not

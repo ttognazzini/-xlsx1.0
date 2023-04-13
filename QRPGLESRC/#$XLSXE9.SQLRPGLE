@@ -2,7 +2,7 @@
      H DFTACTGRP(*NO) BNDDIR('#$XLSX1.0/#$XLSX')
      F* #$XLSX Example Using Relative Positioned Formulas
      D/INCLUDE #$XLSX1.0/QRPGLESRC,#$XLSX_H
-     D defaultPath     DS                  dtaara('#$XLSX/#$XLSXTEMP')
+     D defaultPath     DS                  dtaara('#$XLSX1.0/#$XLSXTEMP')
      D   path                  1    100
 
       * I did this one in free format becasue it looks better with the SQL

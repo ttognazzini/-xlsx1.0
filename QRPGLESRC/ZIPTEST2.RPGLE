@@ -1,14 +1,14 @@
      H DATEDIT(*YMD) OPTION(*NODEBUGIO:*NOSHOWCPY:*SRCSTMT)
      H Dftactgrp(*No) ACTGRP(*NEW) BNDDIR('ZLIB')
       *****************************************************************
-      *Â€Test creating a zip file from RPGLE program                   *
-      *Â€                                                              *
-      *Â€This test the ZIP service program that #$ZIP uses, you        *
-      *Â€should not be using this service program or working on this   *
-      *Â€program. Use the #$ZIP service program, the test program for  *
-      *Â€it is #$ZIPTS.                                                *
+      *€Test creating a zip file from RPGLE program                   *
+      *€                                                              *
+      *€This test the ZIP service program that #$ZIP uses, you        *
+      *€should not be using this service program or working on this   *
+      *€program. Use the #$ZIP service program, the test program for  *
+      *€it is #$ZIPTS.                                                *
       *****************************************************************
-      *Â€This example tests adding folders and multiple files          *
+      *€This example tests adding folders and multiple files          *
       *****************************************************************
      D*
      D/INCLUDE ZIP.INC

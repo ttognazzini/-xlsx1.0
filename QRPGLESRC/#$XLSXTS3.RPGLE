@@ -19,7 +19,7 @@
        // CREATE A NEW SHEET(TAB)
           #$XLSXWkSh();
 
-          #$XLSXCHAR('Ã‰');
+          #$XLSXCHAR('É');
 
        // Close the open XLS File
           #$XLSXClose();

@@ -1,30 +1,30 @@
-      *Â˜****************************************
-      *Â˜* Sample Program Status Data Structure *
-      *Â˜****************************************
-      *Â‚                                                        Begin    Ending
-      *Â‚Seq            Value                 Data        Data   Buffer   Buffer  Alternate
-      *Â‚Num          Contained               Type       Length Position Position Location
-      *Â‚--- ---------------------------- -------------  ------ -------- -------- ---------
-      *Âš12  Program RPG Message          Character      4       171     174
-      *Âš4   Program Source Statement     Character      8       21      28
-      *Âš5   Program Routine              Character      8       29      36       *routine
-      *Âš6   Program Number Of Parameters Zoned Decimal  3,0     37      39       *parms
-      *Âš7   Program Message ID           Character      7       40      46
-      *Âš8   Program MI Instruction Code  Character      4       47      50
-      *Âš9   Program Work                 Character      30      51      80
-      *Âš10  Program Library              Character      10      81      90
-      *Âš11  Program Error Data           Character      80      91      170
-      *Âš12  Program RPG Message          Character      4       171     174
-      *Âš13  Program Job Name             Character      10      244     253
-      *Âš14  Program User ID              Character      10      254     263
-      *Âš15  Program Job Number           Zoned Decimal  6,0     264     269
-      *Âš16  Program Job Date             Zoned Decimal  6       270     275
-      *Âš17  Program Run Date             Zoned Decimal  6       276     281
-      *Âš18  Program Run Time             Zoned Decimal  6       282     287
-      *Âš
-      *Â‚***************************************************************
-      *Â‚Sample Program Status Data Structure in RPG IV Style Version 1
-      *Â‚***************************************************************
+      *˜****************************************
+      *˜* Sample Program Status Data Structure *
+      *˜****************************************
+      *‚                                                        Begin    Ending
+      *‚Seq            Value                 Data        Data   Buffer   Buffer  Alternate
+      *‚Num          Contained               Type       Length Position Position Location
+      *‚--- ---------------------------- -------------  ------ -------- -------- ---------
+      *š12  Program RPG Message          Character      4       171     174
+      *š4   Program Source Statement     Character      8       21      28
+      *š5   Program Routine              Character      8       29      36       *routine
+      *š6   Program Number Of Parameters Zoned Decimal  3,0     37      39       *parms
+      *š7   Program Message ID           Character      7       40      46
+      *š8   Program MI Instruction Code  Character      4       47      50
+      *š9   Program Work                 Character      30      51      80
+      *š10  Program Library              Character      10      81      90
+      *š11  Program Error Data           Character      80      91      170
+      *š12  Program RPG Message          Character      4       171     174
+      *š13  Program Job Name             Character      10      244     253
+      *š14  Program User ID              Character      10      254     263
+      *š15  Program Job Number           Zoned Decimal  6,0     264     269
+      *š16  Program Job Date             Zoned Decimal  6       270     275
+      *š17  Program Run Date             Zoned Decimal  6       276     281
+      *š18  Program Run Time             Zoned Decimal  6       282     287
+      *š
+      *‚***************************************************************
+      *‚Sample Program Status Data Structure in RPG IV Style Version 1
+      *‚***************************************************************
      Dpsds            sds
      D pgmname                       10a                                        Program Name
      D pgmsts                         5s 0                                      Program Status
