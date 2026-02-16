@@ -1,7 +1,7 @@
      H DATEDIT(*YMD) OPTION(*SRCSTMT:*NODEBUGIO:*NOSHOWCPY) DEBUG INDENT('| ')
      H DFTACTGRP(*NO) BNDDIR('#$XLSX1.0/#$XLSX')
      F* #$XLSX Hello World Program Fixed Format
-     D/INCLUDE #$XLSX/QRPGLESRC,#$XLSX_H
+     D/INCLUDE #$XLSX1.0/QRPGLESRC,#$XLSX_H
      D defaultPath     DS                  dtaara('#$XLSX1.0/#$XLSXTEMP')
      D   path                  1    100
      C******************************************************************

@@ -84,7 +84,7 @@
 
 Ctl-Opt Option(*SrcStmt : *NoDebugIO:*NoShowCpy) Indent('| ') Debug  nomain ALLOC(*TERASPACE);
 
-/Copy #$XLSX/QRPGLESRC,#$ZIP_H
+/Copy #$XLSX1.0/QRPGLESRC,#$ZIP_H
 
 // This field is used for the memory buffer.
 // In theory a larger buffer will be faster but use more memory.
@@ -632,7 +632,7 @@ Dcl-Proc #$XLSXWkSh EXPORT;
     // purge imbeded spaces and * from the sheet name
     If Args.Arg(x).Key='SHEETNAME';
       Args.Arg(x).value(1)=%ScanRpl('*':'':Args.Arg(x).value(1));
-      Args.Arg(x).value(1)=%ScanRpl(' ':'_':Args.Arg(x).value(1));
+      // Args.Arg(x).value(1)=%ScanRpl(' ':'_':Args.Arg(x).value(1));
     EndIf;
 
     // Make sure the name doesn't match an existing sheet
@@ -4759,12 +4759,23 @@ End-Proc;
 // XMLESC - Escapes special characters in a string for XML
 // This procedure replaces special characters for an XML output field
 //    & to &#38;       < to &#60;    > to &#62;  ' to &#39;       " to &#34;
+// It also removes some un-printable characters
 // Example #$XMLESC('<DATA>')='&#60;DATA&#62;'
 Dcl-Proc XMLESC;
   Dcl-Pi *n Varchar(4096);
     #$TXT Varchar(4096) const;
   End-Pi;
   Dcl-S txt Varchar(4096);
+  Dcl-C NON_DISPLAY  CONST(X'000102030405060708090A0B0C0E0F+
+                             101112131415161718191A1B1C1D1E1F+
+                             2021222324262728292A2B2C2D2E2F+
+                             303132333435363738393A3B3C3D3E3F');
+  Dcl-C ALL_NULL     CONST(X'000000000000000000000000000000+
+                             00000000000000000000000000000000+
+                             000000000000000000000000000000+
+                             00000000000000000000000000000000');
+
+
   TXT = %Trim(#$TXT);
   TXT=%ScanRpl('&':'&#38;':TXT);
   TXT=%ScanRpl('<':'&#60;':TXT);
@@ -4772,6 +4783,11 @@ Dcl-Proc XMLESC;
   TXT=%ScanRpl('''':'&#39;':TXT);
   TXT=%ScanRpl('"':'&#34;':TXT);
   TXT=%ScanRpl(Null:'':TXT);
+
+  // REMOVE ANY ASCII CHARACTERS UNDER X'40', excluding 0D and 25, CR and LF
+  TXT = %XLATE(NON_DISPLAY : ALL_NULL : TXT);
+  TXT = %SCANRPL (X'00' : '' : TXT);
+
   Return %Trim(TXT);
 End-Proc;
 
@@ -4890,7 +4906,7 @@ Dcl-Proc SplitArg;
 
   // Uppercase all but specific values
   If not (arg.key in %list('OUTPUTNAME':'AUTHOR':'COMPANY':'TITLE':'SUBJECT':'MANAGER':'CATEGORY'
-     :'STATUS':'COMMENTS':'HYPERLINKBASE':'CUSTOMPROPERTY''FONT':'DATAFORMAT''SHEETNAME':'HEADER'
+     :'STATUS':'COMMENTS':'HYPERLINKBASE':'CUSTOMPROPERTY''FONT':'DATAFORMAT':'SHEETNAME':'HEADER'
      :'FOOTER':'PAPERSIZE':'PRINTQUALITY'));
     For x=1 To arg.values;
       arg.value(X)=%upper(arg.value(x));

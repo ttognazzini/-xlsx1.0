@@ -2,7 +2,7 @@
    Ctl-Opt DFTACTGRP(*NO) Option(*NoDebugIO:*SrcStmt);
 
 // defaults
-   dcl-s root char(10) inz('#$XLSX');
+   dcl-s root char(30) inz('/Acom/test/#$XLSX1.0');
    dcl-s olib char(10) inz('#$XLSX1.0');
    dcl-s slib char(10) inz('#$XLSX1.0');
 
@@ -96,7 +96,7 @@
 
 // copy QRPGLESRC
    copy('#$ICONV_H ':'RPGLE     ':'Copy book for ICONV API                           ');
-   copy('#$XLSX    ':'RPGLE     ':'Create Excel File - Service Program               ');
+   copy('#$XLSX    ':'SQLRPGLE  ':'Create Excel File - Service Program               ');
    copy('#$XLSX_H  ':'RPGLE     ':'Create Pretty Excel File - Include                ');
    copy('#$XLSXARG ':'RPGLE     ':'Create Excel File - Copybook - Args               ');
    copy('#$XLSXE1  ':'RPGLE     ':'#$XLSX Example Hello World - Fixed Format         ');
@@ -114,7 +114,7 @@
    copy('#$ZIP_H   ':'RPGLE     ':'Include file for #$Zip service Program            ');
    copy('#$ZIPTS   ':'RPGLE     ':'Test #$Zip service program                        ');
    copy('#$ZIPTS2  ':'RPGLE     ':'Test #$Zip service program                        ');
-   copy('COPYIFS   ':'RPGLE     ':'Copy all source from the IFS                      ');
+// copy('COPYIFS   ':'RPGLE     ':'Copy all source from the IFS                      ');
    copy('COPYSRC   ':'RPGLE     ':'Copy all source to the IFS                        ');
    copy('IFS2SRC2  ':'RPGLE     ':'Get the extension from a path                     ');
    copy('RTVIFSA2  ':'RPGLE     ':'Retrieve IFS File Attributes                      ');
@@ -164,42 +164,42 @@
 
    // add source file based on type
    if type='H';
-      ifsPath=%trim(ifsPath) + 'H/' + %trim(mbr);
-      ifsPath=%trim(ifsPath) + 'H.file/' +%trim(mbr) + '.mbr';
+      ifsPath=%trim(ifsPath) + 'H/' + %trim(mbr) + '.' + %trim(type);
+      srcPath=%trim(srcPath) + 'H.file/' +%trim(mbr) + '.mbr';
       file='H';
    elseif type='CLLE' or type='CLP' or
           type='MD  ' or type='REXX';
-      ifsPath=%trim(ifsPath) + 'QCLSRC/' + %trim(mbr);
-      ifsPath=%trim(ifsPath) + 'QCLSRC.file/' +%trim(mbr) + '.mbr';
+      ifsPath=%trim(ifsPath) + 'QCLSRC/' + %trim(mbr) + '.' + %trim(type);
+      srcPath=%trim(srcPath) + 'QCLSRC.file/' +%trim(mbr) + '.mbr';
       file='QCLSRC';
    elseif type='CMD';
-      ifsPath=%trim(ifsPath) + 'QCMDSRC/' + %trim(mbr);
-      ifsPath=%trim(ifsPath) + 'QCMDSRC.file/' +%trim(mbr) + '.mbr';
+      ifsPath=%trim(ifsPath) + 'QCMDSRC/' + %trim(mbr) + '.' + %trim(type);
+      srcPath=%trim(srcPath) + 'QCMDSRC.file/' +%trim(mbr) + '.mbr';
       file='QCMDSRC';
    elseif type='C';
-      ifsPath=%trim(ifsPath) + 'QCSRC/' + %trim(mbr);
-      ifsPath=%trim(ifsPath) + 'QCSRC.file/' +%trim(mbr) + '.mbr';
+      ifsPath=%trim(ifsPath) + 'QCSRC/' + %trim(mbr) + '.' + %trim(type);
+      srcPath=%trim(srcPath) + 'QCSRC.file/' +%trim(mbr) + '.mbr';
       file='QCSRC';
-   elseif type='PNL';
-      ifsPath=%trim(ifsPath) + 'QPNLSRC/' + %trim(mbr);
-      ifsPath=%trim(ifsPath) + 'QPNLSRC.file/' +%trim(mbr) + '.mbr';
+   elseif type='PNLGRP';
+      ifsPath=%trim(ifsPath) + 'QPNLSRC/' + %trim(mbr) + '.' + %trim(type);
+      srcPath=%trim(srcPath) + 'QPNLSRC.file/' +%trim(mbr) + '.mbr';
       file='QPNLSRC';
    elseif type='RPG' or type='RPGLE' or
           type='TXT' or type='SQLRPGLE';
-      ifsPath=%trim(ifsPath) + 'QRPGLESRC/' + %trim(mbr);
-      ifsPath=%trim(ifsPath) + 'QRPGLESRC.file/' +%trim(mbr) + '.mbr';
+      ifsPath=%trim(ifsPath) + 'QRPGLESRC/' + %trim(mbr) + '.' + %trim(type);
+      srcPath=%trim(srcPath) + 'QRPGLESRC.file/' +%trim(mbr) + '.mbr';
       file='QRPGLESRC';
    elseif type='BND';
-      ifsPath=%trim(ifsPath) + 'QSRVSRC/' + %trim(mbr);
-      ifsPath=%trim(ifsPath) + 'QSRVSRC.file/' +%trim(mbr) + '.mbr';
+      ifsPath=%trim(ifsPath) + 'QSRVSRC/' + %trim(mbr) + '.' + %trim(type);
+      srcPath=%trim(srcPath) + 'QSRVSRC.file/' +%trim(mbr) + '.mbr';
       file='QSRVSRC';
    else;
       // todo handle error
    endif;
 
    // copy from the IFS file to source member
-   cmd('CPYFRMSTMF FROMSTMF('+%trim(ifsPath)+') +
-                   TOMBR('+%trim(srcPath)+') +
+   cmd('CPYFRMSTMF FROMSTMF('''+%trim(ifsPath)+''') +
+                   TOMBR('''+%trim(srcPath)+''') +
                    MBROPT(*REPLACE)');
 
    // set source type and text
@@ -224,7 +224,7 @@
 
    // PROTOTYPE FOR QCMDEXC
    dcl-pr Qcmdexc extpgm('QCMDEXC');
-    *n char(125) options(*VarSize) CONST;
+    *n char(250) options(*VarSize) CONST;
     *n packed(15: 5) const;
    end-pr;
 

@@ -75,25 +75,25 @@
 
        // add 4 records to the table
        sqlstm='insert into ' + %trim(olib) + '/#$XLSXE9PF (tpdesc,tpyear,+
-                       tpds01,tpsd02,tpsd03,tpsd04,tpsd05,tpsd06,tpsd07,tpsd08,+
+                       tpsd01,tpsd02,tpsd03,tpsd04,tpsd05,tpsd06,tpsd07,tpsd08,+
                        tpsd09,tpsd10,tpsd11,tpsd12) +
                values(''Plain Widget'',2021, +
                1234,2234,3234,4234,5234,6234,7234,8234,9234,6543,5897,5897)';
        exec sql execute immediate :sqlstm;
        sqlstm='insert into ' + %trim(olib) + '/#$XLSXE9PF (tpdesc,tpyear,+
-                       tpds01,tpsd02,tpsd03,tpsd04,tpsd05,tpsd06,tpsd07,tpsd08,+
+                       tpsd01,tpsd02,tpsd03,tpsd04,tpsd05,tpsd06,tpsd07,tpsd08,+
                        tpsd09,tpsd10,tpsd11,tpsd12) +
                values(''Green Widget'',2021, +
                1234,2234,3234,4234,5234,6234,7234,8234,9234,2654,3197,2765)';
        exec sql execute immediate :sqlstm;
        sqlstm='insert into ' + %trim(olib) + '/#$XLSXE9PF (tpdesc,tpyear,+
-                       tpds01,tpsd02,tpsd03,tpsd04,tpsd05,tpsd06,tpsd07,tpsd08,+
+                       tpsd01,tpsd02,tpsd03,tpsd04,tpsd05,tpsd06,tpsd07,tpsd08,+
                        tpsd09,tpsd10,tpsd11,tpsd12) +
                values(''Yellow Widget'',2021,+
                1234,2234,3234,4234,5234,6234,7234,8234,9234,3564,2493,3195)';
        exec sql execute immediate :sqlstm;
        sqlstm='insert into ' + %trim(olib) + '/#$XLSXE9PF (tpdesc,tpyear,+
-                       tpds01,tpsd02,tpsd03,tpsd04,tpsd05,tpsd06,tpsd07,tpsd08,+
+                       tpsd01,tpsd02,tpsd03,tpsd04,tpsd05,tpsd06,tpsd07,tpsd08,+
                        tpsd09,tpsd10,tpsd11,tpsd12) +
                values(''Brown Widget'',2021,+
                 1234,2234,3234,4234,5234,6234,7234,8234,9234,1684,1296,1864)';
